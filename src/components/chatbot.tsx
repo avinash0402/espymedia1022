@@ -57,8 +57,24 @@ const STATIC_FAQS: FAQ[] = [
   // Greetings
   {
     priority: 5,
-    patterns: ['hello', 'hi', 'hey', 'sup', "what's up", 'howdy', 'hiya', 'good morning', 'good afternoon', 'good evening'],
+    patterns: ['hello', 'hi', 'hey', 'sup', "what's up", 'howdy', 'hiya', 'good morning', 'good afternoon', 'good evening', 'good day'],
     answer: "Hey! Welcome to Espy Media. Ask me anything — services, pricing, how we work, or anything else you'd like to know!",
+  },
+  {
+    priority: 12,
+    patterns: ['how are you', 'how is it going', 'how are things', 'are you doing well'],
+    answer: "I'm doing well, thanks for asking. I'm here to help with Espy Media's services, pricing, process, timelines, and next steps.",
+  },
+  {
+    priority: 8,
+    patterns: ['thank you', 'thanks', 'great thanks', 'that helps', 'perfect'],
+    answer: "You're welcome. Let me know what you would like to explore next, or use the WhatsApp button to speak with our team.",
+    showWa: true,
+  } as any,
+  {
+    priority: 10,
+    patterns: ['help', 'what can you help with', 'what can you do', 'what can i ask', 'capabilities'],
+    answer: "I can help with services, website and e-commerce projects, pricing, payment options, timelines, SEO, hosting, support, portfolio work, and getting in touch with the team. Try asking a specific question, such as 'How much does a website cost?'",
   },
 
   // ── PRICING (priority 30 — must beat any "website" match) ────────────────
@@ -109,7 +125,8 @@ const STATIC_FAQS: FAQ[] = [
     patterns: [
       'what do you do', 'what is espy', 'about espy', 'who are you',
       'what does espy do', 'what services', 'offerings', 'services offered',
-      'all services', 'list of services',
+      'all services', 'list of services', 'tell me about your services',
+      'what can you do for me', 'what do you offer',
     ],
     answer: '', _key: 'services',
   } as any,
@@ -120,7 +137,8 @@ const STATIC_FAQS: FAQ[] = [
     patterns: [
       'web design', 'build a site', 'build a website', 'develop a website',
       'web development', 'make a website', 'create a website', 'need a website',
-      'new website', 'redesign', 'landing page',
+      'new website', 'redesign', 'landing page', 'website development',
+      'website design', 'website builder', 'website for my business',
     ],
     answer: "Our web design work is built for performance and conversions — not just looks. Every site includes:\n\n• Mobile-first & fully responsive\n• SEO-ready from day one\n• Sub-2s load times (Core Web Vitals optimised)\n• Conversion-optimised layouts\n• Brand identity integration\n\nMost projects ship in 3–6 weeks. Want to know pricing?",
   },
@@ -172,14 +190,14 @@ const STATIC_FAQS: FAQ[] = [
   // ── TIMELINE ─────────────────────────────────────────────────────────────
   {
     priority: 15,
-    patterns: ['how long', 'delivery time', 'turnaround', 'how fast', 'deadline', 'duration', 'when will it be ready', 'how many days', 'how many weeks'],
+    patterns: ['how long', 'delivery time', 'turnaround', 'how fast', 'deadline', 'duration', 'when will it be ready', 'how many days', 'how many weeks', 'when can you deliver', 'project timeline'],
     answer: "Most websites are delivered in 3–6 weeks. We're a lean team so there's no bloated agency overhead slowing things down. Complex custom projects may take longer — we'll give you a clear timeline before we start.",
   },
 
   // ── PROCESS ──────────────────────────────────────────────────────────────
   {
     priority: 15,
-    patterns: ['process', 'how does it work', 'how do you work', 'what are the steps', 'what happens next', 'how to get started', 'get started', 'how to start', 'next steps'],
+    patterns: ['process', 'how does it work', 'how do you work', 'what are the steps', 'what happens next', 'how to get started', 'get started', 'how to start', 'next steps', 'how do i hire you', 'how do i begin'],
     answer: "Here's how we work:\n\n1. Discovery — We understand your brand, goals, and requirements.\n2. Strategy — We map out the approach and scope.\n3. Design — Mockups tailored to your brand.\n4. Build — Fast, clean code with performance in mind.\n5. Launch — We hand over, support, and stay in touch.\n\nNo surprises, just results.",
   },
 
@@ -289,14 +307,17 @@ function getBestMatch(
   input: string,
   faqs: FAQ[],
 ): { answer: string; showWa?: boolean } | null {
-  const q = input.toLowerCase().trim();
+  const q = normalizeText(input);
   let best: { score: number; faq: FAQ } | null = null;
 
   for (const faq of faqs) {
     const priority = faq.priority ?? 10;
     for (const pattern of faq.patterns) {
-      if (q.includes(pattern)) {
-        const score = priority * 1000 + pattern.length;
+      const normalizedPattern = normalizeText(pattern);
+      if (!normalizedPattern || !matchesPattern(q, normalizedPattern)) continue;
+      if (!faq.answer.trim()) continue;
+      {
+        const score = priority * 1000 + normalizedPattern.length * 2;
         if (!best || score > best.score) {
           best = { score, faq };
         }
@@ -309,6 +330,30 @@ function getBestMatch(
     answer: best.faq.answer,
     showWa: (best.faq as any).showWa ?? false,
   };
+}
+
+function normalizeText(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[’']/g, '')
+    .replace(/[^a-z0-9₹]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\bprcing\b/g, 'pricing')
+    .replace(/\bprize\b/g, 'price')
+    .replace(/\bwebiste\b/g, 'website')
+    .replace(/\bwhastapp\b/g, 'whatsapp');
+}
+
+function matchesPattern(question: string, pattern: string) {
+  if (question === pattern || question.includes(` ${pattern} `)) return true;
+  if (question.startsWith(`${pattern} `) || question.endsWith(` ${pattern}`)) return true;
+
+  const patternWords = pattern.split(' ');
+  if (patternWords.length === 1) return false;
+  const questionWords = new Set(question.split(' '));
+  const matchingWords = patternWords.filter((word) => questionWords.has(word)).length;
+  return matchingWords >= Math.max(2, Math.ceil(patternWords.length * 0.7));
 }
 
 // ── Suggested questions ───────────────────────────────────────────────────────
