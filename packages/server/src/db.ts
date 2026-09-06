@@ -8,9 +8,13 @@ const pool = new Pool({
 });
 
 export async function initializeDatabase() {
-  const schemaPath = fs.existsSync(path.join(process.cwd(), 'packages/server/sql/schema.sql'))
-    ? path.join(process.cwd(), 'packages/server/sql/schema.sql')
-    : path.join(process.cwd(), 'sql/schema.sql');
+  const schemaCandidates = [
+    path.join(process.cwd(), 'packages/server/sql/schema.sql'),
+    path.join(process.cwd(), 'sql/schema.sql'),
+    path.join(__dirname, '../sql/schema.sql'),
+  ];
+  const schemaPath = schemaCandidates.find((candidate) => fs.existsSync(candidate));
+  if (!schemaPath) throw new Error('Database schema file is not available in this deployment');
   const schema = fs.readFileSync(schemaPath, 'utf8');
   await pool.query(schema);
 

@@ -27,7 +27,9 @@ export default function AdminSetup() {
         onError: (error) => {
           toast({
             title: error.message.includes('already complete') ? 'Admin setup is already complete' : 'Could not create admin account',
-            description: error.message.includes('8 characters') ? 'Use a password with at least 8 characters.' : undefined,
+            description: error.message.includes('8 characters')
+              ? 'Use a password with at least 8 characters.'
+              : error.message.replace(/^\{"error":"?/, '').replace(/"?\}$/, '').slice(0, 180),
             variant: 'destructive',
           });
         },
