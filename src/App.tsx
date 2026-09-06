@@ -20,6 +20,7 @@ import AdminLeads from '@/pages/admin-leads';
 import AdminSeo from '@/pages/admin-seo';
 import WebDesignProjects from '@/pages/web-design-projects';
 import LegalPage from '@/pages/legal-page';
+import Diagnostics from '@/pages/diagnostics';
 import { SeoHead } from '@/components/seo-head';
 import { Chatbot } from '@/components/chatbot';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/graphic-design" component={GraphicDesign} />
       <Route path="/contact" component={Contact} />
+      <Route path="/diagnostics" component={Diagnostics} />
       <Route path="/work/:id" component={CaseStudy} />
       <Route path="/admin" component={AdminLogin} />
       <Route path="/admin/setup" component={AdminSetup} />

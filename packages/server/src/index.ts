@@ -12,6 +12,7 @@ import settingsRoutes from './routes/settings';
 import dashboardRoutes from './routes/dashboard';
 import uploadRoutes from './routes/upload';
 import cmsRoutes from './routes/cms';
+import diagnosticsRoutes from './routes/diagnostics';
 
 const app = express();
 const PORT = parseInt(process.env.SERVER_PORT || '3001', 10);
@@ -37,6 +38,9 @@ app.use(session({
     sameSite: 'lax',
   },
 }));
+
+// Keep diagnostics available even when database initialization fails.
+app.use('/api/diagnostics', diagnosticsRoutes);
 
 // ── Lazy DB initialization (works for both long-running + serverless) ──
 let _dbInit: Promise<void> | null = null;
