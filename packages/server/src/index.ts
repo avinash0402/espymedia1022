@@ -13,14 +13,6 @@ import dashboardRoutes from './routes/dashboard';
 import uploadRoutes from './routes/upload';
 import cmsRoutes from './routes/cms';
 
-// Augment session type
-declare module 'express-session' {
-  interface SessionData {
-    userId: number;
-    userEmail: string;
-  }
-}
-
 const app = express();
 const PORT = parseInt(process.env.SERVER_PORT || '3001', 10);
 const PgStore = connectPgSimple(session);
