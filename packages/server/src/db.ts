@@ -5,6 +5,9 @@ import path from 'path';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: process.env.VERCEL ? 2 : 10,
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 5_000,
 });
 
 export async function initializeDatabase() {
