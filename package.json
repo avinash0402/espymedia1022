@@ -7,7 +7,7 @@
     "dev": "concurrently --names \"vite,server\" --prefix-colors \"cyan,magenta\" \"vite --config vite.config.ts --host 0.0.0.0\" \"SERVER_PORT=3001 pnpm --filter @workspace/server dev\"",
     "dev:vite": "vite --config vite.config.ts --host 0.0.0.0",
     "dev:server": "pnpm --filter @workspace/server dev",
-    "build": "vite build --config vite.config.ts",
+    "build": "pnpm --filter @workspace/server build && vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
