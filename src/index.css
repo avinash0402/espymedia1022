@@ -530,7 +530,10 @@
 .espy-cta::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: 2px;
+  border-radius: inherit;
+  -webkit-clip-path: inset(0 round 9999px);
+  clip-path: inset(0 round 9999px);
   background: radial-gradient(circle at 50% 50%, white 0.5px, transparent 0);
   background-size: 4px 4px;
   opacity: 0.1;
@@ -541,7 +544,10 @@
 .espy-cta .inner-glow {
   --gradient-angle: 0deg;
   position: absolute;
-  inset: 0;
+  inset: 2px;
+  border-radius: inherit;
+  -webkit-clip-path: inset(0 round 9999px);
+  clip-path: inset(0 round 9999px);
   background: conic-gradient(from var(--gradient-angle),
     transparent 0%,
     rgba(124, 58, 237, 0.15) 15%,
@@ -550,8 +556,8 @@
     rgba(124, 58, 237, 0.55) 65%,
     rgba(124, 58, 237, 0.15) 85%,
     transparent 100%);
-  filter: blur(22px);
-  opacity: 0.85;
+  filter: blur(8px);
+  opacity: 0.75;
   z-index: 0;
   animation: border-spin 4s linear infinite;
   pointer-events: none;
@@ -566,7 +572,7 @@
     rgba(124, 58, 237, 0.95) 70%,
     rgba(109, 40, 217, 0.6)  88%,
     transparent 100%);
-  filter: blur(12px);
+  filter: blur(4px);
   opacity: 1;
 }
 
