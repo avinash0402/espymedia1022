@@ -62,8 +62,11 @@ database. It does not copy existing production data.
    loads this private file automatically; environment variables set by Hostinger
    take precedence if present.
 4. Upload the updated `index.php` after applying this configuration support.
-   Visit `/api/health` and `/api/diagnostics` on the API host. Both should pass
-   before connecting the frontend.
+   Visit `/api/health` and `/api/diagnostics` on the API host. The website's
+   `/diagnostics` page additionally checks whether its browser origin is
+   allowed, the MySQL connection works, the `admin_users` table exists, and
+   initial admin setup is still available. Diagnostics show SQLSTATE/MySQL
+   error codes and actionable causes without returning database credentials.
 
 If the frontend and API use unrelated domain names, browsers may block the
 cross-site admin session cookie. Prefer serving the API from a subdomain of the

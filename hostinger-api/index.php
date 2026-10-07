@@ -5,6 +5,7 @@ const LEGACY_ADMIN_HASH = '$2a$10$rrJm7j63zrlWGxINgIG7NeFLYkkFsrLmcxVeEld430rhnL
 
 $privateConfigPath = getenv('HOSTINGER_API_CONFIG') ?: dirname(__DIR__) . '/hostinger-api-config.php';
 $privateConfig = [];
+$requestId = bin2hex(random_bytes(8));
 if (is_file($privateConfigPath)) {
     $loadedConfig = require $privateConfigPath;
     if (is_array($loadedConfig)) {
@@ -35,7 +36,34 @@ function respond(mixed $data, int $status = 200): never
 
 function fail(string $message, int $status): never
 {
-    respond(['error' => $message], $status);
+    global $requestId;
+    respond(['error' => $message, 'requestId' => $requestId], $status);
+}
+
+function databaseErrorDetail(Throwable $error): string
+{
+    if (!$error instanceof PDOException) {
+        return $error->getMessage() === 'MySQL configuration is incomplete'
+            ? 'MySQL configuration is incomplete. Verify MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, and MYSQL_PASSWORD in the private Hostinger config.'
+            : 'Database check failed. Check the Hostinger PHP error log for the full server-side error.';
+    }
+
+    $sqlState = (string)$error->getCode();
+    $driverCode = isset($error->errorInfo[1]) ? (int)$error->errorInfo[1] : 0;
+    $reason = match ($driverCode) {
+        1045 => 'MySQL denied access. Verify the database username and password, and confirm the user is assigned to this database.',
+        1049 => 'MySQL could not find the configured database. Verify its full database name in Hostinger.',
+        2002, 2003 => 'Hostinger MySQL could not be reached. Verify the database host and port.',
+        1146 => 'A required MySQL table is missing. Import the current schema.sql file using phpMyAdmin.',
+        1044 => 'The configured MySQL user does not have permission to use this database.',
+        2054 => 'The MySQL server authentication method is not supported by the PHP client.',
+        default => 'MySQL rejected the operation. Check the Hostinger PHP error log for the full server-side error.',
+    };
+    $codes = 'SQLSTATE ' . ($sqlState !== '' ? $sqlState : 'unknown');
+    if ($driverCode !== 0) {
+        $codes .= ', MySQL error ' . $driverCode;
+    }
+    return $reason . ' (' . $codes . ').';
 }
 
 function database(): PDO
@@ -306,12 +334,24 @@ try {
     }
 
     if ($path === '/diagnostics' && $method === 'GET') {
-        $hasMysqlConfig = (bool)(configValue('MYSQL_HOST') && configValue('MYSQL_DATABASE') && configValue('MYSQL_USER') && configValue('MYSQL_PASSWORD'));
+        $requiredConfig = ['MYSQL_HOST', 'MYSQL_DATABASE', 'MYSQL_USER', 'MYSQL_PASSWORD'];
+        $missingConfig = array_values(array_filter(
+            $requiredConfig,
+            static fn(string $key): bool => !configValue($key)
+        ));
+        $hasMysqlConfig = $missingConfig === [];
         $hasPdoMysql = in_array('mysql', PDO::getAvailableDrivers(), true);
+        $schemaFilePresent = is_file(__DIR__ . '/schema.sql');
+        $allowedOrigins = array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string)(configValue('FRONTEND_ORIGIN', '') ?: ''))
+        ), static fn(string $allowed): bool => $allowed !== ''));
+        $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        $originAllowed = $requestOrigin === '' || in_array($requestOrigin, $allowedOrigins, true);
         $checks = [
             'databaseConfig' => [
                 'ok' => $hasMysqlConfig,
-                'detail' => $hasMysqlConfig ? 'MySQL settings are configured on the server' : 'One or more MySQL environment settings are missing',
+                'detail' => $hasMysqlConfig ? 'Required MySQL settings are configured' : 'Missing MySQL settings: ' . implode(', ', $missingConfig),
             ],
             'php' => ['ok' => PHP_VERSION_ID >= 80100, 'detail' => 'PHP ' . PHP_VERSION . ' (PHP 8.1+ required)'],
             'databaseDriver' => [
@@ -319,15 +359,67 @@ try {
                 'detail' => $hasPdoMysql ? 'PDO MySQL extension is enabled' : 'PDO MySQL extension is not enabled',
             ],
             'schema' => [
-                'ok' => is_file(__DIR__ . '/schema.sql'),
-                'detail' => is_file(__DIR__ . '/schema.sql') ? 'MySQL schema file is present' : 'MySQL schema file is missing',
+                'ok' => $schemaFilePresent,
+                'detail' => $schemaFilePresent ? 'MySQL schema file is present' : 'MySQL schema file is missing from the API deployment',
+            ],
+            'frontendOrigin' => [
+                'ok' => $originAllowed,
+                'detail' => $requestOrigin === ''
+                    ? 'No browser Origin header was supplied; CORS is not required for this request'
+                    : ($originAllowed
+                        ? 'This website origin is allowed by the API'
+                        : 'This website origin is not in the Hostinger FRONTEND_ORIGIN allowlist'),
             ],
         ];
+        $databaseAvailable = false;
         try {
             database()->query('SELECT 1');
             $checks['database'] = ['ok' => true, 'detail' => 'MySQL connection succeeded'];
+            $databaseAvailable = true;
         } catch (Throwable $error) {
-            $checks['database'] = ['ok' => false, 'detail' => 'MySQL connection failed; check server-side database settings'];
+            $checks['database'] = ['ok' => false, 'detail' => databaseErrorDetail($error)];
+        }
+
+        $adminSetupAvailable = false;
+        if ($databaseAvailable) {
+            try {
+                $users = queryRows('SELECT id, email, password_hash FROM admin_users');
+                $canReplaceSeed = count($users) === 1
+                    && $users[0]['email'] === 'admin@espymedia.com'
+                    && $users[0]['password_hash'] === LEGACY_ADMIN_HASH;
+                $adminSetupAvailable = $users === [] || $canReplaceSeed;
+                $checks['schema'] = [
+                    'ok' => $schemaFilePresent,
+                    'detail' => $schemaFilePresent
+                        ? 'The schema file and admin_users table are available'
+                        : 'MySQL schema file is missing from the API deployment',
+                ];
+                $checks['adminSetup'] = [
+                    'ok' => true,
+                    'detail' => $adminSetupAvailable
+                        ? 'Initial admin account setup is available'
+                        : 'An admin account already exists; initial setup is correctly closed',
+                ];
+            } catch (Throwable $error) {
+                $detail = databaseErrorDetail($error);
+                $checks['schema'] = [
+                    'ok' => false,
+                    'detail' => $detail,
+                ];
+                $checks['adminSetup'] = [
+                    'ok' => false,
+                    'detail' => 'Admin setup cannot continue until the admin_users table is available: ' . $detail,
+                ];
+            }
+        } else {
+            $checks['schema'] = [
+                'ok' => false,
+                'detail' => 'Could not verify the admin_users table because the MySQL connection failed',
+            ];
+            $checks['adminSetup'] = [
+                'ok' => false,
+                'detail' => 'Admin setup cannot be checked until the MySQL connection is available',
+            ];
         }
         $failed = array_keys(array_filter($checks, static fn(array $check): bool => !$check['ok']));
         respond(['ok' => $failed === [], 'generatedAt' => gmdate('c'), 'checks' => $checks, 'failedChecks' => $failed], $failed === [] ? 200 : 503);
@@ -787,10 +879,13 @@ try {
 
     fail('Not found', 404);
 } catch (PDOException $error) {
-    error_log('[hostinger-api] Database error: ' . $error->getMessage());
+    error_log('[hostinger-api][' . $requestId . '] Database error: ' . $error->getMessage());
     $status = $error->getCode() === '23000' ? 409 : 500;
-    fail($status === 409 ? 'A record with this value already exists' : 'Database operation failed', $status);
+    fail($status === 409 ? 'A record with this value already exists' : databaseErrorDetail($error), $status);
 } catch (Throwable $error) {
-    error_log('[hostinger-api] ' . $error->getMessage());
-    fail('Server configuration or request failed', 500);
+    error_log('[hostinger-api][' . $requestId . '] ' . $error->getMessage());
+    if ($error instanceof RuntimeException && $error->getMessage() === 'MySQL configuration is incomplete') {
+        fail(databaseErrorDetail($error), 500);
+    }
+    fail('Server configuration or request failed. Reference: ' . $requestId, 500);
 }

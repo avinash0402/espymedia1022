@@ -20,8 +20,17 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
       : { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
   });
   if (!res.ok) {
-    const msg = await res.text().catch(() => res.statusText);
-    throw new Error(msg || `${res.status} ${res.statusText}`);
+    const responseBody = await res.text().catch(() => '');
+    let message = responseBody;
+    try {
+      const data = JSON.parse(responseBody) as { error?: unknown; message?: unknown; requestId?: unknown };
+      if (typeof data.error === 'string') message = data.error;
+      else if (typeof data.message === 'string') message = data.message;
+      if (typeof data.requestId === 'string') message += ` (reference: ${data.requestId})`;
+    } catch {
+      // Keep non-JSON API responses readable.
+    }
+    throw new Error(`HTTP ${res.status}: ${message || res.statusText}`);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;

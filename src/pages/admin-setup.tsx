@@ -9,6 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
+function setupErrorMessage(message: string): string {
+  if (message.startsWith('HTTP ')) return message;
+  return `Could not reach the Hostinger API: ${message}. Open Deployment diagnostics to check the API, CORS, and MySQL connection.`;
+}
+
 export default function AdminSetup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,11 +32,10 @@ export default function AdminSetup() {
           setLocation('/admin');
         },
         onError: (error) => {
+          const detail = setupErrorMessage(error.message);
           toast({
             title: error.message.includes('already complete') ? 'Admin setup is already complete' : 'Could not create admin account',
-            description: error.message.includes('8 characters')
-              ? 'Use a password with at least 8 characters.'
-              : error.message.replace(/^\{"error":"?/, '').replace(/"?\}$/, '').slice(0, 180),
+            description: error.message.includes('8 characters') ? 'Use a password with at least 8 characters.' : detail,
             variant: 'destructive',
           });
         },
@@ -63,6 +67,13 @@ export default function AdminSetup() {
             <CardDescription>Create the first administrator account for this deployment.</CardDescription>
           </CardHeader>
           <CardContent>
+            {setup.error && (
+              <div role="alert" className="mb-4 space-y-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                <p className="font-semibold">Admin setup failed</p>
+                <p className="break-words">{setupErrorMessage(setup.error.message)}</p>
+                <a className="underline underline-offset-4" href="/diagnostics">Open deployment diagnostics</a>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="setup-email">Admin email</Label>
