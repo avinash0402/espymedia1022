@@ -5,24 +5,13 @@ import { ArrowRight } from 'lucide-react';
 import { CircularGallery } from '@/components/circular-gallery';
 import { useGetGraphicWorks } from '@workspace/api-client-react';
 
-const GALLERY_ITEMS = [
-  { image: 'https://picsum.photos/seed/brand1/800/600', text: 'Brand Identity' },
-  { image: 'https://picsum.photos/seed/social2/800/600', text: 'Social Media' },
-  { image: 'https://picsum.photos/seed/adcreative3/800/600', text: 'Ad Creatives' },
-  { image: 'https://picsum.photos/seed/uidesign4/800/600', text: 'UI Design' },
-  { image: 'https://picsum.photos/seed/print5/800/600', text: 'Print Design' },
-  { image: 'https://picsum.photos/seed/logo6/800/600', text: 'Logo Design' },
-  { image: 'https://picsum.photos/seed/pack7/800/600', text: 'Packaging' },
-  { image: 'https://picsum.photos/seed/motion8/800/600', text: 'Motion Graphics' },
-];
-
 export function GraphicDesignSection() {
-  const { data: cmsWorks } = useGetGraphicWorks();
+  const { data: cmsWorks, isLoading, error } = useGetGraphicWorks();
   const galleryItems = cmsWorks?.filter((work) => work.published && work.imageUrl).map((work) => ({
     image: work.imageUrl,
     text: work.title,
   })) || [];
-  const items = galleryItems.length > 0 ? galleryItems : GALLERY_ITEMS;
+  const items = galleryItems;
 
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   useEffect(() => {
@@ -71,23 +60,29 @@ export function GraphicDesignSection() {
       </div>
 
       {/* ── CircularGallery ── */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        viewport={{ once: true }}
-        className="relative w-full h-[340px] sm:h-[420px] md:h-[500px]"
-      >
-        <CircularGallery
-          items={items}
-          bend={bend}
-          textColor="#ffffff"
-          borderRadius={0.05}
-          scrollSpeed={2}
-          scrollEase={0.05}
-          font="bold 28px Glacial Indifference"
-        />
-      </motion.div>
+      {items.length > 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          viewport={{ once: true }}
+          className="relative w-full h-[340px] sm:h-[420px] md:h-[500px]"
+        >
+          <CircularGallery
+            items={items}
+            bend={bend}
+            textColor="#ffffff"
+            borderRadius={0.05}
+            scrollSpeed={2}
+            scrollEase={0.05}
+            font="bold 28px Glacial Indifference"
+          />
+        </motion.div>
+      ) : (
+        <div className="mx-auto flex h-[240px] max-w-7xl items-center justify-center px-6 text-sm text-zinc-400">
+          {isLoading ? 'Loading graphic portfolio...' : error ? `Graphic portfolio unavailable: ${error.message}` : 'No published graphic works yet.'}
+        </div>
+      )}
 
       {/* Drag hint + View All Works button — centred at bottom */}
       <div className="relative z-10 flex flex-col items-center gap-5 mt-8">

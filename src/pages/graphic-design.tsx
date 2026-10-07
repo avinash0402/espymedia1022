@@ -15,27 +15,6 @@ interface PortfolioItem {
   aspect: 'portrait' | 'square' | 'wide' | 'tall';
 }
 
-const PORTFOLIO: PortfolioItem[] = [
-  { id: 1,  image: 'https://picsum.photos/seed/p1/600/800',  title: 'Luxe Brand Identity',      category: 'Branding', aspect: 'portrait' },
-  { id: 2,  image: 'https://picsum.photos/seed/p2/900/506',  title: 'Campaign Banner Series',   category: 'Social',   aspect: 'wide'     },
-  { id: 3,  image: 'https://picsum.photos/seed/p3/600/600',  title: 'Logo System',              category: 'Branding', aspect: 'square'   },
-  { id: 4,  image: 'https://picsum.photos/seed/p4/506/900',  title: 'Instagram Story Pack',     category: 'Social',   aspect: 'tall'     },
-  { id: 5,  image: 'https://picsum.photos/seed/p5/800/600',  title: 'Product Launch Poster',    category: 'Print',    aspect: 'wide'     },
-  { id: 6,  image: 'https://picsum.photos/seed/p6/600/800',  title: 'Annual Report Cover',      category: 'Print',    aspect: 'portrait' },
-  { id: 7,  image: 'https://picsum.photos/seed/p7/600/600',  title: 'App UI Concept',           category: 'UI',       aspect: 'square'   },
-  { id: 8,  image: 'https://picsum.photos/seed/p8/900/506',  title: 'Brand Guidelines Doc',     category: 'Branding', aspect: 'wide'     },
-  { id: 9,  image: 'https://picsum.photos/seed/p9/506/900',  title: 'Reel Cover Template',      category: 'Social',   aspect: 'tall'     },
-  { id: 10, image: 'https://picsum.photos/seed/p10/600/800', title: 'Event Poster',             category: 'Print',    aspect: 'portrait' },
-  { id: 11, image: 'https://picsum.photos/seed/p11/600/600', title: 'Icon Set Design',          category: 'UI',       aspect: 'square'   },
-  { id: 12, image: 'https://picsum.photos/seed/p12/800/600', title: 'Ad Creative — Meta',       category: 'Social',   aspect: 'wide'     },
-  { id: 13, image: 'https://picsum.photos/seed/p13/600/800', title: 'Packaging Design',         category: 'Print',    aspect: 'portrait' },
-  { id: 14, image: 'https://picsum.photos/seed/p14/506/900', title: 'Story Ad — Swipe Up',      category: 'Social',   aspect: 'tall'     },
-  { id: 15, image: 'https://picsum.photos/seed/p15/900/506', title: 'Website Hero Mockup',      category: 'UI',       aspect: 'wide'     },
-  { id: 16, image: 'https://picsum.photos/seed/p16/600/600', title: 'Brand Pattern',            category: 'Branding', aspect: 'square'   },
-  { id: 17, image: 'https://picsum.photos/seed/p17/600/800', title: 'Menu Design',              category: 'Print',    aspect: 'portrait' },
-  { id: 18, image: 'https://picsum.photos/seed/p18/900/506', title: 'Carousel Ad Set',          category: 'Social',   aspect: 'wide'     },
-];
-
 function getAspectStyle(aspect: PortfolioItem['aspect']) {
   switch (aspect) {
     case 'portrait': return { aspectRatio: '3 / 4' };
@@ -287,8 +266,8 @@ function Lightbox({ items, index, onClose, onNavigate }: LightboxProps) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function GraphicDesign() {
-  const { data: cmsWorks } = useGetGraphicWorks();
-  const { data: cmsCategories } = useGetGraphicCategories();
+  const { data: cmsWorks, isLoading: worksLoading, error: worksError } = useGetGraphicWorks();
+  const { data: cmsCategories, isLoading: categoriesLoading, error: categoriesError } = useGetGraphicCategories();
   const [active, setActive] = useState<Category>('All');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -301,11 +280,13 @@ export default function GraphicDesign() {
       category: cmsCategories?.find((category) => category.id === work.categoryId)?.name || 'Uncategorized',
       aspect: (['portrait', 'square', 'wide', 'tall'] as const)[index % 4],
     }));
-  const portfolio = cmsItems.length > 0 ? cmsItems : PORTFOLIO;
-  const categories: Category[] = ['All', ...(cmsItems.length > 0
-    ? (cmsCategories || []).filter((category) => cmsItems.some((work) => work.category === category.name)).map((category) => category.name)
-    : ['Branding', 'Social', 'Print', 'UI'])];
-  const filtered = active === 'All' ? portfolio : portfolio.filter(p => p.category === active);
+  const categories: Category[] = [
+    'All',
+    ...new Set(cmsItems.map((work) => work.category)),
+  ];
+  const filtered = active === 'All' ? cmsItems : cmsItems.filter((work) => work.category === active);
+  const loading = worksLoading || categoriesLoading;
+  const error = worksError || categoriesError;
 
   const openLightbox = (i: number) => setLightboxIndex(i);
   const closeLightbox = () => setLightboxIndex(null);
@@ -482,10 +463,19 @@ export default function GraphicDesign() {
           </motion.div>
         </AnimatePresence>
 
-        {filtered.length === 0 && (
+        {loading && (
+          <p className="py-24 text-center text-slate-400" role="status">Loading graphic portfolio...</p>
+        )}
+        {error && (
+          <div className="py-16 text-center text-red-300" role="alert">
+            <p>Graphic portfolio could not be loaded: {error.message}</p>
+            <Link href="/diagnostics" className="mt-3 inline-block underline underline-offset-4">Check API connection</Link>
+          </div>
+        )}
+        {!loading && !error && filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-32 text-slate-600">
             <p className="text-4xl mb-3">✦</p>
-            <p className="text-sm">No works in this category yet.</p>
+            <p className="text-sm">No published graphic works in this category yet.</p>
           </div>
         )}
       </section>

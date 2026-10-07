@@ -4,171 +4,31 @@ import { ArrowUpRight, ExternalLink } from 'lucide-react';
 import { NavBar } from '@/components/nav-bar';
 import { Footer } from '@/components/footer';
 import { Link } from 'wouter';
+import { useGetProjects, type Project } from '@workspace/api-client-react';
 
-const CATEGORIES = [
-  'All',
-  'Business Website',
-  'E-commerce',
-  'Landing Page',
-  'Portfolio',
-  'Healthcare',
-  'Restaurant & Food',
+const PROJECT_STYLES = [
+  { gradient: 'from-violet-950 via-purple-950 to-indigo-950', accentColor: '#8B5CF6', accentText: 'text-violet-400' },
+  { gradient: 'from-yellow-950 via-amber-950 to-orange-950', accentColor: '#F59E0B', accentText: 'text-amber-400' },
+  { gradient: 'from-rose-950 via-pink-950 to-purple-950', accentColor: '#F43F5E', accentText: 'text-rose-400' },
+  { gradient: 'from-teal-950 via-emerald-950 to-cyan-950', accentColor: '#14B8A6', accentText: 'text-teal-400' },
+  { gradient: 'from-blue-950 via-sky-950 to-indigo-950', accentColor: '#3B82F6', accentText: 'text-blue-400' },
+  { gradient: 'from-orange-950 via-red-950 to-rose-950', accentColor: '#F97316', accentText: 'text-orange-400' },
 ];
 
-const PROJECTS = [
-  {
-    id: 1,
-    title: 'Aurum Jewellers',
-    category: 'E-commerce',
-    url: '#',
-    gradient: 'from-yellow-950 via-amber-950 to-orange-950',
-    accentColor: '#F59E0B',
-    accentText: 'text-amber-400',
-    description: 'Luxury jewellery e-commerce with custom product configurator and immersive gallery.',
-    tags: ['Shopify', 'Custom UI'],
-    featured: true,
-  },
-  {
-    id: 2,
-    title: 'NovaSpark Technologies',
-    category: 'Business Website',
-    url: '#',
-    gradient: 'from-violet-950 via-purple-950 to-indigo-950',
-    accentColor: '#8B5CF6',
-    accentText: 'text-violet-400',
-    description: 'B2B SaaS marketing site engineered for lead capture with animated data visualisations.',
-    tags: ['React', 'Framer Motion'],
-    featured: true,
-  },
-  {
-    id: 3,
-    title: 'Drift Collective',
-    category: 'E-commerce',
-    url: '#',
-    gradient: 'from-rose-950 via-pink-950 to-purple-950',
-    accentColor: '#F43F5E',
-    accentText: 'text-rose-400',
-    description: 'Lifestyle streetwear brand store with lookbook integration and seamless checkout.',
-    tags: ['Shopify', 'Custom Theme'],
-    featured: true,
-  },
-  {
-    id: 4,
-    title: 'Meridian Aesthetic Clinic',
-    category: 'Healthcare',
-    url: '#',
-    gradient: 'from-teal-950 via-emerald-950 to-cyan-950',
-    accentColor: '#14B8A6',
-    accentText: 'text-teal-400',
-    description: 'Premium aesthetics clinic with online booking, service pages and lead funnels.',
-    tags: ['WordPress', 'Custom Design'],
-    featured: false,
-  },
-  {
-    id: 5,
-    title: 'Zephyr Architecture',
-    category: 'Portfolio',
-    url: '#',
-    gradient: 'from-zinc-900 via-stone-950 to-neutral-950',
-    accentColor: '#A1A1AA',
-    accentText: 'text-zinc-400',
-    description: 'Minimalist architect portfolio with full-screen project galleries and smooth transitions.',
-    tags: ['React', 'GSAP'],
-    featured: false,
-  },
-  {
-    id: 6,
-    title: 'Ember & Oak Restaurant',
-    category: 'Restaurant & Food',
-    url: '#',
-    gradient: 'from-orange-950 via-red-950 to-rose-950',
-    accentColor: '#F97316',
-    accentText: 'text-orange-400',
-    description: 'Fine-dining restaurant website with online reservations and an animated menu showcase.',
-    tags: ['WordPress', 'OpenTable'],
-    featured: false,
-  },
-  {
-    id: 7,
-    title: 'PulseFlow SaaS',
-    category: 'Landing Page',
-    url: '#',
-    gradient: 'from-blue-950 via-sky-950 to-indigo-950',
-    accentColor: '#3B82F6',
-    accentText: 'text-blue-400',
-    description: 'High-converting SaaS landing page with animated hero, pricing table and demo booking.',
-    tags: ['React', 'Tailwind'],
-    featured: false,
-  },
-  {
-    id: 8,
-    title: 'Vega Legal Group',
-    category: 'Business Website',
-    url: '#',
-    gradient: 'from-slate-950 via-zinc-950 to-gray-950',
-    accentColor: '#64748B',
-    accentText: 'text-slate-400',
-    description: 'Professional law firm website with practice area pages and consultation intake forms.',
-    tags: ['WordPress', 'Custom Design'],
-    featured: false,
-  },
-  {
-    id: 9,
-    title: 'Solara Skincare',
-    category: 'E-commerce',
-    url: '#',
-    gradient: 'from-pink-950 via-fuchsia-950 to-rose-950',
-    accentColor: '#EC4899',
-    accentText: 'text-pink-400',
-    description: 'Clean-beauty brand store with ingredient transparency pages and subscription billing.',
-    tags: ['Shopify', 'Custom UI'],
-    featured: false,
-  },
-  {
-    id: 10,
-    title: 'Atlas Fitness',
-    category: 'Landing Page',
-    url: '#',
-    gradient: 'from-green-950 via-emerald-950 to-teal-950',
-    accentColor: '#10B981',
-    accentText: 'text-emerald-400',
-    description: 'Fitness coaching funnel with quiz flow, testimonials carousel and payment integration.',
-    tags: ['React', 'Stripe'],
-    featured: false,
-  },
-  {
-    id: 11,
-    title: 'Luminary Studio',
-    category: 'Portfolio',
-    url: '#',
-    gradient: 'from-purple-950 via-violet-950 to-indigo-950',
-    accentColor: '#A78BFA',
-    accentText: 'text-purple-400',
-    description: 'Creative studio portfolio with 3D-inspired card interactions and project case studies.',
-    tags: ['React', 'Three.js'],
-    featured: false,
-  },
-  {
-    id: 12,
-    title: 'Haven Dental Care',
-    category: 'Healthcare',
-    url: '#',
-    gradient: 'from-cyan-950 via-sky-950 to-blue-950',
-    accentColor: '#06B6D4',
-    accentText: 'text-cyan-400',
-    description: 'Friendly dental practice site with online appointment booking and patient resources.',
-    tags: ['WordPress', 'Custom Design'],
-    featured: false,
-  },
-];
+function projectCategories(projects: Project[]): string[] {
+  return ['All', ...new Set(projects.map((project) => project.category).filter(Boolean))];
+}
 
 export default function WebDesignProjects() {
   const [activeCategory, setActiveCategory] = useState('All');
+  const { data: allProjects, isLoading, error } = useGetProjects();
+  const projects = (allProjects || []).filter((project) => project.published);
+  const categories = projectCategories(projects);
 
   const filtered =
     activeCategory === 'All'
-      ? PROJECTS
-      : PROJECTS.filter((p) => p.category === activeCategory);
+      ? projects
+      : projects.filter((project) => project.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
@@ -212,7 +72,7 @@ export default function WebDesignProjects() {
             transition={{ duration: 0.6, delay: 0.15 }}
             className="flex flex-wrap gap-2 mb-14"
           >
-            {CATEGORIES.map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
@@ -242,13 +102,22 @@ export default function WebDesignProjects() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.35, delay: i * 0.04 }}
                 >
-                  <ProjectCard project={project} />
+                  <ProjectCard project={project} index={i} />
                 </motion.div>
               ))}
             </AnimatePresence>
           </motion.div>
 
-          {filtered.length === 0 && (
+          {isLoading && (
+            <p className="py-24 text-center text-zinc-400" role="status">Loading projects...</p>
+          )}
+          {error && (
+            <div className="py-16 text-center text-red-300" role="alert">
+              <p>Projects could not be loaded: {error.message}</p>
+              <Link href="/diagnostics" className="mt-3 inline-block underline underline-offset-4">Check API connection</Link>
+            </div>
+          )}
+          {!isLoading && !error && filtered.length === 0 && (
             <div className="text-center py-24 text-zinc-500">
               No projects in this category yet.
             </div>
@@ -282,13 +151,25 @@ export default function WebDesignProjects() {
   );
 }
 
-function ProjectCard({ project }: { project: typeof PROJECTS[0] }) {
+function ProjectCard({ project, index }: { project: Project; index: number }) {
+  const style = PROJECT_STYLES[index % PROJECT_STYLES.length];
+  const tags = project.techStack || [];
+  const description = project.challenge || project.approach || project.result;
+
   return (
     <div className="group relative rounded-2xl overflow-hidden border border-white/[0.07] bg-zinc-950 hover:border-white/[0.14] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
       {/* Visual area */}
-      <div className={`relative h-52 bg-gradient-to-br ${project.gradient} overflow-hidden`}>
+      <div className={`relative h-52 bg-gradient-to-br ${style.gradient} overflow-hidden`}>
+        {project.imageUrl && (
+          <img
+            src={project.imageUrl}
+            alt={project.altText || project.title}
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+        )}
         {/* Browser chrome mockup */}
-        <div className="absolute inset-3 rounded-lg bg-black/40 backdrop-blur-sm border border-white/10 overflow-hidden">
+        <div className={`absolute inset-3 rounded-lg border border-white/10 overflow-hidden ${project.imageUrl ? 'bg-black/10' : 'bg-black/40 backdrop-blur-sm'}`}>
           {/* Browser bar */}
           <div className="h-7 bg-black/60 border-b border-white/10 flex items-center px-3 gap-2 flex-shrink-0">
             <div className="flex gap-1.5">
@@ -297,18 +178,18 @@ function ProjectCard({ project }: { project: typeof PROJECTS[0] }) {
               <div className="w-2 h-2 rounded-full bg-green-500/70" />
             </div>
             <div className="flex-1 mx-2 h-3.5 rounded bg-white/10 flex items-center px-2">
-              <div className="w-2 h-2 rounded-full mr-1.5" style={{ background: project.accentColor, opacity: 0.8 }} />
+              <div className="w-2 h-2 rounded-full mr-1.5" style={{ background: style.accentColor, opacity: 0.8 }} />
               <div className="h-1.5 w-24 rounded-full bg-white/20" />
             </div>
           </div>
           {/* Content lines */}
           <div className="p-3 space-y-2">
-            <div className="h-4 rounded" style={{ background: project.accentColor, opacity: 0.25, width: '60%' }} />
+            <div className="h-4 rounded" style={{ background: style.accentColor, opacity: 0.25, width: '60%' }} />
             <div className="h-2 rounded bg-white/10" style={{ width: '90%' }} />
             <div className="h-2 rounded bg-white/10" style={{ width: '75%' }} />
             <div className="h-2 rounded bg-white/10" style={{ width: '80%' }} />
             <div className="mt-3 flex gap-2">
-              <div className="h-6 w-20 rounded-full" style={{ background: project.accentColor, opacity: 0.5 }} />
+              <div className="h-6 w-20 rounded-full" style={{ background: style.accentColor, opacity: 0.5 }} />
               <div className="h-6 w-16 rounded-full bg-white/10" />
             </div>
           </div>
@@ -326,11 +207,11 @@ function ProjectCard({ project }: { project: typeof PROJECTS[0] }) {
       {/* Info */}
       <div className="p-5">
         <div className="flex items-center justify-between mb-3">
-          <span className={`text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] ${project.accentText}`}>
+          <span className={`text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] ${style.accentText}`}>
             {project.category}
           </span>
           <div className="flex gap-1">
-            {project.tags.map((tag) => (
+            {tags.map((tag) => (
               <span key={tag} className="text-[10px] text-zinc-600 bg-white/[0.03] border border-white/[0.05] rounded px-1.5 py-0.5">
                 {tag}
               </span>
@@ -342,16 +223,16 @@ function ProjectCard({ project }: { project: typeof PROJECTS[0] }) {
           {project.title}
         </h3>
         <p className="text-sm text-zinc-500 leading-relaxed mb-4">
-          {project.description}
+          {description}
         </p>
 
         <a
-          href={project.url}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={project.liveUrl || `/work/${project.id}`}
+          target={project.liveUrl ? '_blank' : undefined}
+          rel={project.liveUrl ? 'noopener noreferrer' : undefined}
           className="inline-flex items-center gap-2 text-sm font-medium text-white border border-white/10 bg-white/[0.05] hover:bg-white/10 hover:border-white/20 rounded-full px-4 py-2 transition-all duration-200 group/btn"
         >
-          View Site
+          {project.liveUrl ? 'View Site' : 'View Project'}
           <ArrowUpRight className="w-3.5 h-3.5 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
         </a>
       </div>
