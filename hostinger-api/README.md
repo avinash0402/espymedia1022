@@ -46,14 +46,16 @@ database. It does not copy existing production data.
        'MYSQL_DATABASE' => 'the-full-database-name',
        'MYSQL_USER' => 'the-full-database-username',
        'MYSQL_PASSWORD' => 'the-database-password',
-       'FRONTEND_ORIGIN' => 'https://your-vercel-site.example',
+       'FRONTEND_ORIGIN' => 'https://your-vercel-site.example,https://your-custom-domain.example',
        'API_PUBLIC_URL' => 'https://api.yourdomain.com',
    ];
    ```
 
    Find the hostname, full database name, and username in hPanel's database
-   details. `FRONTEND_ORIGIN` must be the exact browser origin of the Vercel
-   site, with no path or trailing slash. `API_PUBLIC_URL` is optional.
+   details. `FRONTEND_ORIGIN` accepts one or more exact browser origins,
+   comma-separated with no paths or trailing slashes. For example:
+   `https://espymedia1022.vercel.app,https://espymediaagency.in`.
+   `API_PUBLIC_URL` is optional.
 3. Save the file with permissions restricted to the account owner where the
    File Manager permits it. Do not put credentials in frontend files, Vercel
    `VITE_*` variables, or any file under the public document root. The API
@@ -71,7 +73,7 @@ website's own domain (for example `api.example.com` and `www.example.com`).
 
 Set `VITE_API_BASE_URL` in Vercel to the API origin ending in `/api`, for
 example `https://api.example.com/api`, then redeploy the frontend. The PHP API
-allows credentialed requests only from the exact `FRONTEND_ORIGIN`.
+allows credentialed requests only from origins listed in `FRONTEND_ORIGIN`.
 
 The frontend still uses the existing React UI and API contract. Public content,
 admin login, CMS updates, leads, and image uploads are handled by the PHP API.

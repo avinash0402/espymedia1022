@@ -206,10 +206,13 @@ function sendMappedOne(string $table, int|string $id, string $keyColumn, array $
     respond(decodeRow($row, $map, $json, $bool));
 }
 
-$allowedOrigin = trim((string)(configValue('FRONTEND_ORIGIN', '') ?: ''));
+$allowedOrigins = array_values(array_filter(array_map(
+    'trim',
+    explode(',', (string)(configValue('FRONTEND_ORIGIN', '') ?: ''))
+), static fn(string $allowed): bool => $allowed !== ''));
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($allowedOrigin !== '' && hash_equals($allowedOrigin, $origin)) {
-    header('Access-Control-Allow-Origin: ' . $allowedOrigin);
+if ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
     header('Access-Control-Allow-Credentials: true');
     header('Vary: Origin');
 }
@@ -237,7 +240,7 @@ $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $path = preg_replace('#^/api(?=/|$)#', '', $uriPath) ?: '/';
 $path = '/' . trim($path, '/');
 $body = requestBody();
-if ($origin !== '' && ($allowedOrigin === '' || !hash_equals($allowedOrigin, $origin))) {
+if ($origin !== '' && !in_array($origin, $allowedOrigins, true)) {
     fail('Request origin is not allowed', 403);
 }
 
