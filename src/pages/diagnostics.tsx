@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { API_BASE } from '@workspace/api-client-react';
 
 type DiagnosticCheck = { ok: boolean; detail: string };
 type DiagnosticResult = {
@@ -10,10 +11,9 @@ type DiagnosticResult = {
 };
 
 const labels: Record<string, string> = {
-  databaseUrl: 'Database URL',
-  sessionSecret: 'Session secret',
+  databaseConfig: 'Database configuration',
   schema: 'Database schema',
-  node: 'Node.js runtime',
+  php: 'PHP runtime',
   database: 'Database connection',
 };
 
@@ -24,7 +24,7 @@ export default function Diagnostics() {
   const runDiagnostics = () => {
     setResult(null);
     setRequestError('');
-    fetch('/api/diagnostics', { cache: 'no-store' })
+    fetch(`${API_BASE}/diagnostics`, { cache: 'no-store', credentials: 'include' })
       .then(async (response) => {
         const data = await response.json().catch(() => null);
         if (!data) throw new Error(`API returned HTTP ${response.status}`);

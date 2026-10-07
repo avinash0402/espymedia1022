@@ -14,6 +14,10 @@ if (rawPort && (Number.isNaN(port) || port <= 0)) {
 
 const basePath = process.env.BASE_PATH || '/';
 
+if (process.env.NODE_ENV === 'production' && !process.env.VITE_API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL must point to the deployed API before building for production');
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [

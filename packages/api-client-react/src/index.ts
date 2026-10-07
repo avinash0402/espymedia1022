@@ -9,10 +9,10 @@ import {
 // Shared fetch helper
 // ---------------------------------------------------------------------------
 
-const BASE = '/api';
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     ...options,
     headers: options?.body instanceof FormData
@@ -591,7 +591,7 @@ export function useAdminLogout() {
 export async function uploadFile(file: File): Promise<{ url: string }> {
   const form = new FormData();
   form.append('file', file);
-  const res = await fetch('/api/upload', { method: 'POST', body: form, credentials: 'include' });
+  const res = await fetch(`${API_BASE}/upload`, { method: 'POST', body: form, credentials: 'include' });
   if (!res.ok) throw new Error('Upload failed');
   return res.json();
 }
