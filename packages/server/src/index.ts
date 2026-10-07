@@ -10,7 +10,6 @@ import leadRoutes from './routes/leads';
 import serviceRoutes from './routes/services';
 import settingsRoutes from './routes/settings';
 import dashboardRoutes from './routes/dashboard';
-import uploadRoutes from './routes/upload';
 import cmsRoutes from './routes/cms';
 import diagnosticsRoutes from './routes/diagnostics';
 
@@ -63,7 +62,6 @@ app.use('/api/leads', leadRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/upload', uploadRoutes);
 app.use('/api/cms', cmsRoutes);
 
 // Health check

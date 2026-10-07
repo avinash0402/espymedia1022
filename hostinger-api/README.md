@@ -89,6 +89,52 @@ After the schema is imported and the frontend points at the API, use the
 existing `/admin/setup` page once to create the first admin. Further setup
 attempts are rejected once an admin account exists.
 
+## Move Cloudinary images to Hostinger
+
+The PHP API stores new uploads in its `uploads/` directory. To copy all image
+assets from the Cloudinary account and replace Cloudinary links used by site
+content, run the migration script from the project root on a trusted computer
+with Node.js 18 or newer. It uses the Cloudinary Admin API and your Hostinger
+API; credentials are read only from local environment variables, never saved in
+the repository.
+
+In PowerShell, set the Cloudinary cloud name/API key/API secret and the
+Hostinger API URL. Run without `--apply` first to list the number and total
+size of assets, referenced image links, and content records:
+
+```powershell
+$env:CLOUDINARY_CLOUD_NAME = 'your-cloud-name'
+$env:CLOUDINARY_API_KEY = 'your-cloudinary-api-key'
+$env:CLOUDINARY_API_SECRET = 'your-cloudinary-api-secret'
+$env:HOSTINGER_API_BASE = 'https://api.yourdomain.com/api'
+node scripts/migrate-cloudinary-to-hostinger.mjs
+```
+
+After checking the preview, set the Hostinger admin credentials in the same
+PowerShell window and run with `--apply`:
+
+```powershell
+$env:HOSTINGER_ADMIN_EMAIL = 'your-admin-email'
+$env:HOSTINGER_ADMIN_PASSWORD = 'your-admin-password'
+node scripts/migrate-cloudinary-to-hostinger.mjs --apply
+```
+
+Import the content rows into MySQL before applying the migration. The script
+copies every image asset in the Cloudinary `image/upload` collection (not
+video/raw resources), then copies any referenced transformed image URLs needed
+to preserve the exact content image. It updates image URLs in settings,
+projects, graphic works and galleries, testimonials, blog posts, platforms,
+and SEO records. It resumes from the local ignored mapping file if interrupted.
+Uploads over 10 MB or unsupported image formats stop the run before database
+URLs are updated; resolve those images and run it again.
+If you import database rows after running the script, run it again after the
+import so those rows' Cloudinary URLs are also replaced.
+
+Verify the copied images and website pages before removing the Cloudinary
+environment variables from any old deployment and revoking the Cloudinary API
+key. Keep the Cloudinary originals until the Hostinger copies and every
+referenced page have been checked. Copying does not delete any Cloudinary data.
+
 Keep the old database available and backed up until public pages, login,
 dashboard, CMS editing, lead submission, and uploads have all been tested on
 the new API. The old PostgreSQL/Node server source remains for local development and

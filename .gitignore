@@ -7,3 +7,4 @@ uploads/*
 *.log
 !hostinger-api/uploads/
 !hostinger-api/uploads/.htaccess
+.cloudinary-hostinger-migration*.json

@@ -851,7 +851,7 @@ try {
             fail('File must be no larger than 10 MB', 400);
         }
         $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico'];
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico', 'avif'];
         if (!in_array($extension, $allowedExtensions, true)) {
             fail('Unsupported image file type', 400);
         }

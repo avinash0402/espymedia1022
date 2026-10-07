@@ -36,7 +36,6 @@ for (const dependency of [
   'connect-pg-simple',
   'pg',
   'bcryptjs',
-  'cloudinary',
   'multer',
 ]) {
   const dependencyPath = path.join(root, 'packages/server/node_modules', dependency);
@@ -45,10 +44,6 @@ for (const dependency of [
 
 for (const name of ['DATABASE_URL', 'SESSION_SECRET']) {
   check(`Environment variable: ${name}`, Boolean(process.env[name]), 'Set in the current process');
-}
-
-for (const name of ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']) {
-  check(`Optional environment variable: ${name}`, Boolean(process.env[name]), 'Required for image uploads');
 }
 
 if (fs.existsSync(compiledServerPath)) {
