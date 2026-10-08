@@ -8,7 +8,6 @@ import {
   Check, ExternalLink,
 } from 'lucide-react';
 import { TestimonialSection } from '@/components/testimonial-section';
-import { EspyComparisonSection } from '@/components/espy-comparison-section';
 import { CountUp } from '@/components/count-up';
 import { NavBar } from '@/components/nav-bar';
 import { Footer } from '@/components/footer';
@@ -911,7 +910,6 @@ export default function Home() {
           </div>
         </section>
 
-        <EspyComparisonSection />
 
         {/* ── TESTIMONIALS ──────────────────────────────────────────── */}
         <TestimonialSection />
