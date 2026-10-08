@@ -286,6 +286,7 @@ class Media {
   }
 
   createTitle() {
+    if (!this.text.trim()) return;
     this.title = new Title({
       gl: this.gl,
       plane: this.plane,
@@ -385,6 +386,7 @@ class AppCore {
   boundOnTouchUp!: () => void;
   isDown: boolean = false;
   start: number = 0;
+  active: boolean = true;
 
   constructor(container: HTMLElement, {
     items, bend = 1, textColor = '#ffffff', borderRadius = 0,
@@ -406,7 +408,7 @@ class AppCore {
   }
 
   createRenderer() {
-    this.renderer = new Renderer({ alpha: true, antialias: true, dpr: Math.min(window.devicePixelRatio || 1, 2) });
+    this.renderer = new Renderer({ alpha: true, antialias: true, dpr: Math.min(window.devicePixelRatio || 1, 1.5) });
     this.gl = this.renderer.gl;
     this.gl.clearColor(0, 0, 0, 0);
     this.container.appendChild(this.renderer.gl.canvas as HTMLCanvasElement);
@@ -423,7 +425,7 @@ class AppCore {
   }
 
   createGeometry() {
-    this.planeGeometry = new Plane(this.gl, { heightSegments: 50, widthSegments: 100 });
+    this.planeGeometry = new Plane(this.gl, { heightSegments: 20, widthSegments: 40 });
   }
 
   createMedias(items: { image: string; text: string }[] | undefined, bend: number, textColor: string, borderRadius: number, font: string) {
@@ -506,6 +508,7 @@ class AppCore {
   }
 
   update() {
+    if (!this.active) return;
     // Slowly advance the target for the auto-scroll loop; user drag/wheel overrides naturally
     this.scroll.target += this.autoScrollSpeed;
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
@@ -518,6 +521,13 @@ class AppCore {
     this.raf = window.requestAnimationFrame(this.update.bind(this));
   }
 
+  setActive(active: boolean) {
+    if (this.active === active) return;
+    this.active = active;
+    if (active) this.update();
+    else window.cancelAnimationFrame(this.raf);
+  }
+
   addEventListeners() {
     this.boundOnResize = this.onResize.bind(this);
     this.boundOnWheel = this.onWheel.bind(this);
@@ -525,11 +535,11 @@ class AppCore {
     this.boundOnTouchMove = this.onTouchMove.bind(this);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
     window.addEventListener('resize', this.boundOnResize);
-    window.addEventListener('wheel', this.boundOnWheel, { passive: true });
-    window.addEventListener('mousedown', this.boundOnTouchDown);
+    this.container.addEventListener('wheel', this.boundOnWheel, { passive: true });
+    this.container.addEventListener('mousedown', this.boundOnTouchDown);
     window.addEventListener('mousemove', this.boundOnTouchMove);
     window.addEventListener('mouseup', this.boundOnTouchUp);
-    window.addEventListener('touchstart', this.boundOnTouchDown, { passive: true });
+    this.container.addEventListener('touchstart', this.boundOnTouchDown, { passive: true });
     window.addEventListener('touchmove', this.boundOnTouchMove, { passive: true });
     window.addEventListener('touchend', this.boundOnTouchUp);
   }
@@ -537,11 +547,11 @@ class AppCore {
   destroy() {
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.boundOnResize);
-    window.removeEventListener('wheel', this.boundOnWheel);
-    window.removeEventListener('mousedown', this.boundOnTouchDown);
+    this.container.removeEventListener('wheel', this.boundOnWheel);
+    this.container.removeEventListener('mousedown', this.boundOnTouchDown);
     window.removeEventListener('mousemove', this.boundOnTouchMove);
     window.removeEventListener('mouseup', this.boundOnTouchUp);
-    window.removeEventListener('touchstart', this.boundOnTouchDown);
+    this.container.removeEventListener('touchstart', this.boundOnTouchDown);
     window.removeEventListener('touchmove', this.boundOnTouchMove);
     window.removeEventListener('touchend', this.boundOnTouchUp);
     if (this.renderer?.gl?.canvas?.parentNode) {
@@ -583,15 +593,33 @@ export function CircularGallery({
     if (!hasWebGL) return;
 
     let app: AppCore | null = null;
+    let isIntersecting = false;
+    const syncActivity = () => app?.setActive(isIntersecting && !document.hidden);
     try {
       app = new AppCore(containerRef.current, {
         items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase,
       });
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(([entry]) => {
+          isIntersecting = entry.isIntersecting;
+          syncActivity();
+        });
+        observer.observe(containerRef.current);
+        document.addEventListener('visibilitychange', syncActivity);
+        return () => {
+          observer.disconnect();
+          document.removeEventListener('visibilitychange', syncActivity);
+          app?.destroy();
+        };
+      }
     } catch {
       // WebGL context creation failed — leave the container empty
     }
 
-    return () => { app?.destroy(); };
+    return () => {
+      document.removeEventListener('visibilitychange', syncActivity);
+      app?.destroy();
+    };
   }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase]);
 
   return (

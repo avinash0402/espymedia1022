@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import {
   ArrowUpRight, ArrowRight, Briefcase,
@@ -8,7 +8,7 @@ import {
   Check, ExternalLink,
 } from 'lucide-react';
 import { TestimonialSection } from '@/components/testimonial-section';
-import { GraphicDesignSection } from '@/components/graphic-design-section';
+import { EspyComparisonSection } from '@/components/espy-comparison-section';
 import { CountUp } from '@/components/count-up';
 import { NavBar } from '@/components/nav-bar';
 import { Footer } from '@/components/footer';
@@ -23,6 +23,40 @@ import {
   useGetSettings,
   useGetFeaturedProjects,
 } from '@workspace/api-client-react';
+
+const GraphicDesignSection = lazy(() =>
+  import('@/components/graphic-design-section').then(({ GraphicDesignSection: section }) => ({ default: section })),
+);
+
+function DeferredGraphicDesignSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    if (!('IntersectionObserver' in window)) {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setShouldLoad(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: '600px 0px' });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  const placeholder = <div aria-hidden="true" className="min-h-[720px] bg-black md:min-h-[920px]" />;
+  return (
+    <div ref={containerRef}>
+      {shouldLoad ? <Suspense fallback={placeholder}><GraphicDesignSection /></Suspense> : placeholder}
+    </div>
+  );
+}
 
 // ── Static fallback data ─────────────────────────────────────────────────────
 
@@ -386,14 +420,14 @@ export default function Home() {
             {(() => {
               const items = (platforms?.filter((p) => p.published && p.logoUrl) || []);
               if (!items.length) return null;
-              // Guarantee each strip is wider than any viewport regardless of logo count.
-              // Assume each logo occupies ~140 px (100 px image + 40 px gap).
+              // Keep each strip wider than any viewport with the larger responsive logos.
+              // Assume each logo occupies ~220 px (160 px image + 60 px gap).
               // Target minimum strip width: 1800 px (covers 4 K screens).
-              const reps = Math.max(4, Math.ceil(1800 / (items.length * 140)));
+              const reps = Math.max(4, Math.ceil(1800 / (items.length * 220)));
               const repeated = Array.from({ length: reps }, () => items).flat();
               const strip = (ariaHidden?: boolean) => (
                 <div
-                  className="flex shrink-0 gap-10 items-center pr-10"
+                  className="flex shrink-0 items-center gap-8 pr-8 sm:gap-12 sm:pr-12"
                   style={{ animation: 'marquee 50s linear infinite' }}
                   aria-hidden={ariaHidden || undefined}
                 >
@@ -403,9 +437,13 @@ export default function Home() {
                       href={platform.linkUrl || '#'}
                       target={platform.linkUrl ? '_blank' : undefined}
                       rel={platform.linkUrl ? 'noreferrer' : undefined}
-                      className="shrink-0"
+                      className="flex shrink-0 items-center justify-center"
                     >
-                      <img src={platform.logoUrl} alt={platform.name || ''} className="h-8 w-auto object-contain" />
+                      <img
+                        src={platform.logoUrl}
+                        alt={platform.name || ''}
+                        className="h-10 w-auto max-w-[140px] object-contain sm:h-12 sm:max-w-[170px] md:h-14 md:max-w-[190px] lg:h-16 lg:max-w-[210px]"
+                      />
                     </a>
                   ))}
                 </div>
@@ -656,7 +694,7 @@ export default function Home() {
         </section>
 
         {/* ── GRAPHIC DESIGN WORK ───────────────────────────────────── */}
-        <GraphicDesignSection />
+        <DeferredGraphicDesignSection />
 
         {/* ── WEB DESIGN — CAPABILITY CARDS ────────────────────────── */}
         <section className="py-14 md:py-32 border-t border-white/[0.05]">
@@ -878,6 +916,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <EspyComparisonSection />
 
         {/* ── TESTIMONIALS ──────────────────────────────────────────── */}
         <TestimonialSection />

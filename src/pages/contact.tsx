@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, CheckCircle2, Loader2, Mail, MapPin, Phone } from 'lucide-react';
 import { NavBar } from '@/components/nav-bar';
 import { Footer } from '@/components/footer';
 import { useCreateLead, useGetSettings } from '@workspace/api-client-react';
@@ -105,6 +105,37 @@ export default function Contact() {
                 Tell us about your vision. We'll be in touch shortly.
               </p>
             </motion.div>
+
+            {(settings?.contactEmail || settings?.phone || settings?.address) && (
+              <section
+                aria-label="Contact details"
+                data-advanced-scroll-reveal
+                data-advanced-scroll-stagger
+                className="grid gap-3 sm:grid-cols-3 mb-10"
+              >
+                {settings.contactEmail && (
+                  <a href={`mailto:${settings.contactEmail}`} className="rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-[transform,border-color] duration-300 hover:-translate-y-0.5 hover:border-violet-400/40">
+                    <Mail className="w-5 h-5 text-violet-300 mb-3" aria-hidden="true" />
+                    <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Email</span>
+                    <span className="break-all text-sm text-white">{settings.contactEmail}</span>
+                  </a>
+                )}
+                {settings.phone && (
+                  <a href={`tel:${settings.phone.replace(/[^\d+]/g, '')}`} className="rounded-xl border border-white/10 bg-white/[0.03] p-4 transition-[transform,border-color] duration-300 hover:-translate-y-0.5 hover:border-violet-400/40">
+                    <Phone className="w-5 h-5 text-violet-300 mb-3" aria-hidden="true" />
+                    <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Call us</span>
+                    <span className="text-sm text-white">{settings.phone}</span>
+                  </a>
+                )}
+                {settings.address && (
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                    <MapPin className="w-5 h-5 text-violet-300 mb-3" aria-hidden="true" />
+                    <span className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Address</span>
+                    <span className="text-sm text-white">{settings.address}</span>
+                  </div>
+                )}
+              </section>
+            )}
 
             {/* Progress bar */}
             <div className="flex items-center gap-2 mb-12">

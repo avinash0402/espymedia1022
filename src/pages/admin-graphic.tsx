@@ -1,517 +1,379 @@
 import { useState } from 'react';
 import { AdminLayout } from '@/components/admin-layout';
 import {
-  useGetGraphicWorks, useGetGraphicCategories,
-  useCreateGraphicWork, useUpdateGraphicWork, useDeleteGraphicWork,
-  useCreateGraphicCategory, useUpdateGraphicCategory, useDeleteGraphicCategory,
+  useGetGraphicWorks,
+  useGetGraphicCategories,
+  createGraphicWorkRecord,
+  updateGraphicWorkRecord,
+  deleteGraphicWorkRecord,
+  useCreateGraphicCategory,
 } from '@workspace/api-client-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { ImageUpload } from '@/components/image-upload';
 import { BulkImageUpload, type UploadedImage } from '@/components/bulk-image-upload';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Save, Trash2, Pencil, Image, CheckSquare, Square, X, Tag } from 'lucide-react';
+import {
+  Check,
+  CheckSquare,
+  ImagePlus,
+  Loader2,
+  Plus,
+  Square,
+  Tag,
+  Trash2,
+  X,
+} from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 const slugify = (value: string) =>
   value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-const blank = {
-  title: '', slug: '', categoryId: undefined as number | undefined,
-  imageUrl: '', galleryUrls: [] as string[], description: '', altText: '',
-  published: true, featured: false, sortOrder: 0,
-};
+async function settleInBatches<T>(
+  items: T[],
+  run: (item: T, index: number) => Promise<unknown>,
+  batchSize = 5,
+): Promise<PromiseSettledResult<unknown>[]> {
+  const results: PromiseSettledResult<unknown>[] = [];
+  for (let start = 0; start < items.length; start += batchSize) {
+    const batch = items.slice(start, start + batchSize);
+    results.push(...await Promise.allSettled(batch.map((item, index) => run(item, start + index))));
+  }
+  return results;
+}
 
 export default function AdminGraphic() {
-  const { data: works = [], isLoading } = useGetGraphicWorks();
-  const { data: categories = [] } = useGetGraphicCategories();
-  const create = useCreateGraphicWork();
-  const update = useUpdateGraphicWork();
-  const remove = useDeleteGraphicWork();
+  const { data: works = [], isLoading, error } = useGetGraphicWorks();
+  const { data: categories = [], error: categoriesError } = useGetGraphicCategories();
   const createCategory = useCreateGraphicCategory();
-  const updateCategory = useUpdateGraphicCategory();
-  const deleteCategory = useDeleteGraphicCategory();
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [editing, setEditing] = useState<number | null>(null);
-  const [draft, setDraft] = useState({ ...blank });
-  const [categoryName, setCategoryName] = useState('');
-  const [showForm, setShowForm] = useState(false);
-
-  // Bulk selection state
-  const [bulkMode, setBulkMode] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+  const [uploadCategoryId, setUploadCategoryId] = useState('');
+  const [bulkCategoryId, setBulkCategoryId] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [bulkTitles, setBulkTitles] = useState<Record<number, string>>({});
-  const [bulkCategoryId, setBulkCategoryId] = useState<string>('');
-  const [isBulkSaving, setIsBulkSaving] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const resetForm = () => {
-    setEditing(null);
-    setDraft({ ...blank, sortOrder: works.length });
-    setShowForm(false);
-  };
+  const refreshWorks = () => queryClient.invalidateQueries({ queryKey: ['cms', 'graphic-works'] });
+  const refreshCategories = () => queryClient.invalidateQueries({ queryKey: ['cms', 'graphic-categories'] });
 
-  const save = () => {
-    if (!draft.title) {
-      toast({ title: 'Work title is required', variant: 'destructive' });
-      return;
-    }
-    const data = { ...draft, slug: draft.slug || slugify(draft.title) };
-    const done = () => {
-      qc.invalidateQueries({ queryKey: ['cms', 'graphic-works'] });
-      resetForm();
-      toast({ title: editing !== null ? 'Graphic work updated' : 'Graphic work added' });
-    };
-    const fail = (err: any) => {
-      const msg = err?.message || 'Could not save graphic work';
-      toast({ title: msg, variant: 'destructive' });
-    };
-    if (editing !== null) update.mutate({ id: editing, data }, { onSuccess: done, onError: fail });
-    else create.mutate({ data }, { onSuccess: done, onError: fail });
-  };
+  const handleUploaded = async (uploads: UploadedImage[]) => {
+    const categoryId = uploadCategoryId ? Number(uploadCategoryId) : undefined;
+    const results = await settleInBatches(uploads, (upload, index) => {
+      const baseName = upload.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ').trim();
+      const title = baseName || `Portfolio image ${works.length + index + 1}`;
+      const uniqueSuffix = `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`;
+      return createGraphicWorkRecord({
+        title,
+        slug: `${slugify(title) || 'portfolio-image'}-${uniqueSuffix}`,
+        categoryId,
+        imageUrl: upload.url,
+        galleryUrls: [],
+        description: '',
+        altText: title,
+        published: true,
+        featured: false,
+        sortOrder: works.length + index,
+      });
+    });
 
-  const startEdit = (work: any) => {
-    setEditing(work.id);
-    setDraft({ ...blank, ...work, galleryUrls: work.galleryUrls || [] });
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const addCategory = () => {
-    if (!categoryName) return;
-    createCategory.mutate(
-      { data: { name: categoryName, slug: slugify(categoryName) } },
-      { onSuccess: () => { setCategoryName(''); qc.invalidateQueries({ queryKey: ['cms', 'graphic-categories'] }); toast({ title: 'Category added' }); } }
+    await refreshWorks();
+    const created = results.filter((result) => result.status === 'fulfilled').length;
+    const failures = results.flatMap((result, index) =>
+      result.status === 'rejected' ? [uploads[index].name] : [],
     );
-  };
-
-  const createSeparateWorks = async (uploads: UploadedImage[]) => {
-    if (!uploads.length) return;
-    try {
-      for (const [index, upload] of uploads.entries()) {
-        const filename = upload.name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ').trim();
-        const title = filename || `Graphic work ${works.length + index + 1}`;
-        await create.mutateAsync({
-          data: {
-            title,
-            slug: `${slugify(title) || 'graphic-work'}-${Date.now()}-${index}`,
-            categoryId: draft.categoryId,
-            imageUrl: upload.url,
-            galleryUrls: [],
-            description: '',
-            altText: title,
-            published: true,
-            featured: false,
-            sortOrder: works.length + index,
-          },
-        });
-      }
-      qc.invalidateQueries({ queryKey: ['cms', 'graphic-works'] });
-      toast({ title: `${uploads.length} separate graphic works added` });
-    } catch (error: any) {
-      toast({ title: error?.message || 'Some graphic works could not be added', variant: 'destructive' });
+    if (created) {
+      toast({ title: `${created} image${created === 1 ? '' : 's'} added to the portfolio` });
+    }
+    if (failures.length) {
+      toast({
+        title: `${failures.length} image${failures.length === 1 ? '' : 's'} could not be added`,
+        description: failures.join(', '),
+        variant: 'destructive',
+      });
     }
   };
 
-  // Bulk selection helpers
-  const toggleSelect = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
+  const addCategory = async () => {
+    const name = newCategory.trim();
+    const slug = slugify(name);
+    if (!name || !slug) return;
+
+    try {
+      await createCategory.mutateAsync({ data: { name, slug } });
+      setNewCategory('');
+      await refreshCategories();
+      toast({ title: 'Category added' });
+    } catch (categoryError) {
+      toast({
+        title: categoryError instanceof Error ? categoryError.message : 'Could not add category',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const toggleSelection = (id: number) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
   };
 
-  const toggleSelectAll = () => {
-    if (selectedIds.size === works.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(works.map((w) => w.id)));
-    }
+  const toggleAll = () => {
+    setSelectedIds((current) =>
+      current.size === works.length ? new Set() : new Set(works.map((work) => work.id)),
+    );
   };
 
-  const enterBulkMode = () => {
-    setBulkMode(true);
-    setSelectedIds(new Set());
-    setBulkTitles({});
-    setBulkCategoryId('');
-    setShowForm(false);
+  const assignCategory = async () => {
+    if (!selectedIds.size) return;
+    setIsApplying(true);
+    const results = await settleInBatches(
+      Array.from(selectedIds),
+      (id) => updateGraphicWorkRecord(id, {
+        categoryId: bulkCategoryId ? Number(bulkCategoryId) : null,
+      }),
+    );
+    await refreshWorks();
+    setIsApplying(false);
+    const updated = results.filter((result) => result.status === 'fulfilled').length;
+    const failed = results.length - updated;
+    toast({
+      title: failed ? `${updated} updated, ${failed} failed` : `Category updated for ${updated} images`,
+      ...(failed ? { variant: 'destructive' as const } : {}),
+    });
+    if (!failed) setSelectedIds(new Set());
   };
 
-  const exitBulkMode = () => {
-    setBulkMode(false);
-    setSelectedIds(new Set());
-    setBulkTitles({});
-    setBulkCategoryId('');
-  };
-
-  const handleBulkTitleChange = (id: number, value: string) => {
-    setBulkTitles((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const applyBulkChanges = async () => {
-    if (selectedIds.size === 0) {
-      toast({ title: 'No items selected', variant: 'destructive' });
-      return;
-    }
-    setIsBulkSaving(true);
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const id of selectedIds) {
-      const work = works.find((w) => w.id === id);
-      if (!work) continue;
-
-      const newTitle = bulkTitles[id] !== undefined ? bulkTitles[id] : work.title;
-      const newCategoryId = bulkCategoryId !== '' ? Number(bulkCategoryId) : work.categoryId;
-
-      try {
-        await update.mutateAsync({
-          id,
-          data: {
-            ...work,
-            title: newTitle,
-            slug: newTitle !== work.title ? slugify(newTitle) || work.slug : work.slug,
-            categoryId: newCategoryId,
-          },
-        });
-        successCount++;
-      } catch {
-        failCount++;
-      }
-    }
-
-    qc.invalidateQueries({ queryKey: ['cms', 'graphic-works'] });
-    setIsBulkSaving(false);
-
-    if (failCount === 0) {
-      toast({ title: `${successCount} work${successCount !== 1 ? 's' : ''} updated` });
-    } else {
-      toast({ title: `${successCount} updated, ${failCount} failed`, variant: 'destructive' });
-    }
-
-    exitBulkMode();
+  const deleteSelected = async () => {
+    if (!selectedIds.size) return;
+    setIsDeleting(true);
+    const ids = Array.from(selectedIds);
+    const results = await settleInBatches(ids, deleteGraphicWorkRecord);
+    await refreshWorks();
+    const deletedIds = ids.filter((_, index) => results[index]?.status === 'fulfilled');
+    const failedIds = ids.filter((_, index) => results[index]?.status === 'rejected');
+    setSelectedIds(new Set(failedIds));
+    setIsDeleting(false);
+    toast({
+      title: failedIds.length ? `${deletedIds.length} deleted, ${failedIds.length} failed` : `${deletedIds.length} images deleted`,
+      ...(failedIds.length ? { variant: 'destructive' as const } : {}),
+    });
   };
 
   return (
     <AdminLayout>
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2">Graphic Portfolio</h1>
-            <p className="text-muted-foreground text-sm">Manage graphic design work, categories, and featured placement</p>
-          </div>
-          <div className="flex gap-2 shrink-0">
-            {!bulkMode ? (
-              <>
-                {!showForm && (
-                  <Button variant="outline" onClick={enterBulkMode}>
-                    <CheckSquare className="w-4 h-4 mr-2" /> Bulk Select
-                  </Button>
-                )}
-                {!showForm && (
-                  <Button className="gradient-purple" onClick={() => { setDraft({ ...blank, sortOrder: works.length }); setShowForm(true); }}>
-                    <Plus className="w-4 h-4 mr-2" /> Add Work
-                  </Button>
-                )}
-              </>
-            ) : (
-              <Button variant="outline" onClick={exitBulkMode}>
-                <X className="w-4 h-4 mr-2" /> Cancel Bulk
-              </Button>
-            )}
-          </div>
-        </div>
+      <div className="space-y-6">
+        <header>
+          <p className="mb-2 text-xs uppercase tracking-[0.2em] text-primary">Portfolio CMS</p>
+          <h1 className="mb-1 text-2xl font-bold sm:text-3xl">Graphic Portfolio</h1>
+          <p className="text-sm text-muted-foreground">Upload images, select them, then assign a category or delete them.</p>
+        </header>
 
-        {/* Bulk Selection Toolbar */}
-        {bulkMode && (
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <button
-                  onClick={toggleSelectAll}
-                  className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors"
-                >
-                  {selectedIds.size === works.length && works.length > 0
-                    ? <CheckSquare className="w-4 h-4 text-primary" />
-                    : <Square className="w-4 h-4" />}
-                  {selectedIds.size === works.length && works.length > 0 ? 'Deselect All' : 'Select All'}
-                </button>
-
-                <span className="text-sm text-muted-foreground">
-                  {selectedIds.size} item{selectedIds.size !== 1 ? 's' : ''} selected
-                </span>
-
-                <div className="flex items-center gap-2 ml-auto flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                    <select
-                      className="h-9 rounded-md border border-input bg-background px-3 text-sm min-w-[160px]"
-                      value={bulkCategoryId}
-                      onChange={(e) => setBulkCategoryId(e.target.value)}
-                    >
-                      <option value="">— Bulk assign category —</option>
-                      <option value="0">Uncategorized</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <Button
-                    onClick={applyBulkChanges}
-                    className="gradient-purple"
-                    disabled={selectedIds.size === 0 || isBulkSaving}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {isBulkSaving ? 'Saving...' : 'Apply Changes'}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Categories */}
         <Card className="border-glow">
-          <CardContent className="p-5 space-y-3">
-            <h2 className="font-semibold">Categories</h2>
-            <div className="flex gap-2">
-              <Input value={categoryName} onChange={(e) => setCategoryName(e.target.value)} placeholder="New category name" onKeyDown={(e) => e.key === 'Enter' && addCategory()} />
-              <Button variant="outline" onClick={addCategory}><Plus className="w-4 h-4 mr-2" />Add</Button>
+          <CardContent className="space-y-5 p-5 sm:p-6">
+            <div className="flex items-center gap-2">
+              <ImagePlus className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">Add portfolio images</h2>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <span key={cat.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-sm">
-                  <button
-                    onClick={() => {
-                      const name = window.prompt('Rename category', cat.name);
-                      if (name && name !== cat.name)
-                        updateCategory.mutate({ id: cat.id, data: { name, slug: slugify(name) } });
-                    }}
-                  >
-                    {cat.name}
-                  </button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button aria-label={`Delete ${cat.name}`} className="ml-1 text-primary/60 hover:text-destructive">×</button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete category "{cat.name}"?</AlertDialogTitle>
-                        <AlertDialogDescription>Works in this category will become uncategorised.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteCategory.mutate({ id: cat.id })}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </span>
-              ))}
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.6fr)] sm:items-end">
+              <BulkImageUpload
+                onUploaded={handleUploaded}
+                label="Select or drop multiple images. Each image is added as a separate portfolio item."
+              />
+              <div className="space-y-2">
+                <Label htmlFor="upload-category">Category for new images</Label>
+                <select
+                  id="upload-category"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={uploadCategoryId}
+                  onChange={(event) => setUploadCategoryId(event.target.value)}
+                >
+                  <option value="">Uncategorized</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Add / Edit Form */}
-        {showForm && (
-          <Card className="border-glow">
-            <CardContent className="p-6 space-y-5">
-              <h2 className="text-xl font-semibold">{editing !== null ? 'Edit Work' : 'Add New Work'}</h2>
+        <Card>
+          <CardContent className="space-y-4 p-5 sm:p-6">
+            <div className="flex items-center gap-2">
+              <Tag className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">Categories</h2>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={newCategory}
+                onChange={(event) => setNewCategory(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    void addCategory();
+                  }
+                }}
+                placeholder="Add a category"
+                aria-label="New category name"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void addCategory()}
+                disabled={!newCategory.trim() || createCategory.isPending}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add
+              </Button>
+            </div>
+            {categoriesError && (
+              <p role="alert" className="text-sm text-destructive">
+                Could not load categories: {categoriesError.message}
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Work Title *</Label>
-                  <Input className="mt-1" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Brand identity campaign" />
-                </div>
-                <div>
-                  <Label>Slug (auto-generated if empty)</Label>
-                  <Input className="mt-1" value={draft.slug} onChange={(e) => setDraft({ ...draft, slug: e.target.value })} placeholder="brand-identity-campaign" />
-                </div>
-                <div>
-                  <Label>Category</Label>
-                  <select
-                    className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                    value={draft.categoryId || ''}
-                    onChange={(e) => setDraft({ ...draft, categoryId: e.target.value ? Number(e.target.value) : undefined })}
-                  >
-                    <option value="">Uncategorized</option>
-                    {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <Label>Display Order</Label>
-                  <Input className="mt-1" type="number" value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: Number(e.target.value) })} />
-                </div>
-              </div>
-
-              <div>
-                <Label className="mb-2 block">Cover / Featured Image</Label>
-                <ImageUpload
-                  value={draft.imageUrl}
-                  onChange={(url) => setDraft({ ...draft, imageUrl: url })}
-                  label="This is the main image shown in the gallery grid"
-                />
-              </div>
-
-              <div>
-                <Label>Alt Text</Label>
-                <Input className="mt-1" value={draft.altText} onChange={(e) => setDraft({ ...draft, altText: e.target.value })} placeholder="Descriptive alt text for accessibility" />
-              </div>
-
-              <div>
-                <Label>Description</Label>
-                <Textarea className="mt-1" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Brief description of this work..." />
-              </div>
-
-              {/* Bulk Gallery Image Upload */}
-              <div>
-                <Label className="mb-2 block">Gallery Images</Label>
-                <BulkImageUpload
-                  values={draft.galleryUrls}
-                  onChange={(urls) => setDraft({ ...draft, galleryUrls: urls })}
-                  label="Upload multiple images at once — each image becomes its own graphic work with a starter title from the filename. Edit each title below."
-                  onUploaded={createSeparateWorks}
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  New bulk uploads are separate portfolio items. Existing gallery images on this work are preserved.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Switch checked={draft.published} onCheckedChange={(v) => setDraft({ ...draft, published: v })} id="pub" />
-                  <Label htmlFor="pub">Published</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={draft.featured} onCheckedChange={(v) => setDraft({ ...draft, featured: v })} id="feat" />
-                  <Label htmlFor="feat">Featured on homepage</Label>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button onClick={save} className="gradient-purple" disabled={create.isPending || update.isPending}>
-                  <Save className="w-4 h-4 mr-2" />{create.isPending || update.isPending ? 'Saving...' : editing !== null ? 'Update Work' : 'Add Work'}
-                </Button>
-                <Button variant="outline" onClick={resetForm}>Cancel</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Works list */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((i) => <div key={i} className="h-28 rounded-xl bg-muted/20 animate-pulse" />)}
+        <section aria-label="Graphic portfolio images" className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">Images <span className="text-muted-foreground">({works.length})</span></h2>
+              <p className="text-xs text-muted-foreground">Select images using the corner checkboxes.</p>
+            </div>
+            {works.length > 0 && (
+              <Button type="button" variant="outline" size="sm" onClick={toggleAll}>
+                {selectedIds.size === works.length
+                  ? <CheckSquare className="mr-2 h-4 w-4" />
+                  : <Square className="mr-2 h-4 w-4" />}
+                {selectedIds.size === works.length ? 'Deselect all' : 'Select all'}
+              </Button>
+            )}
           </div>
-        ) : works.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center text-muted-foreground">
-              No graphic works yet. Add your first one above.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {works.map((work) => {
-              const cat = categories.find((c) => c.id === work.categoryId);
-              const isSelected = selectedIds.has(work.id);
-              return (
-                <Card
-                  key={work.id}
-                  className={`border-glow transition-all ${bulkMode ? 'cursor-pointer' : ''} ${isSelected ? 'ring-2 ring-primary border-primary/50' : ''}`}
-                  onClick={bulkMode ? () => toggleSelect(work.id) : undefined}
+
+          {selectedIds.size > 0 && (
+            <Card className="sticky top-3 z-20 border-primary/30 bg-background/95 backdrop-blur">
+              <CardContent className="flex flex-wrap items-center gap-3 p-3">
+                <span className="text-sm font-medium">{selectedIds.size} selected</span>
+                <select
+                  aria-label="Assign selected images to category"
+                  className="h-9 min-w-44 flex-1 rounded-md border border-input bg-background px-3 text-sm sm:flex-none"
+                  value={bulkCategoryId}
+                  onChange={(event) => setBulkCategoryId(event.target.value)}
                 >
-                  <CardContent className="p-5 flex gap-4">
-                    {/* Checkbox in bulk mode */}
-                    {bulkMode && (
-                      <div className="flex items-center justify-center flex-shrink-0">
-                        {isSelected
-                          ? <CheckSquare className="w-5 h-5 text-primary" />
-                          : <Square className="w-5 h-5 text-muted-foreground" />}
-                      </div>
-                    )}
+                  <option value="">Uncategorized</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>{category.name}</option>
+                  ))}
+                </select>
+                <Button type="button" size="sm" onClick={() => void assignCategory()} disabled={isApplying || isDeleting}>
+                  {isApplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                  Assign category
+                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" size="sm" variant="destructive" disabled={isApplying || isDeleting}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete selected
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete {selectedIds.size} selected images?</AlertDialogTitle>
+                      <AlertDialogDescription>This permanently removes the selected portfolio records. Uploaded image files are not removed from storage.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => void deleteSelected()} disabled={isDeleting}>
+                        {isDeleting ? 'Deleting…' : 'Delete images'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Clear selection"
+                  onClick={() => setSelectedIds(new Set())}
+                  disabled={isApplying || isDeleting}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
-                    {work.imageUrl ? (
-                      <img src={work.imageUrl} alt={work.altText || work.title} className="w-24 h-20 object-cover rounded-lg flex-shrink-0" />
-                    ) : (
-                      <div className="w-24 h-20 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                        <Image className="w-5 h-5 text-muted-foreground" />
-                      </div>
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {Array.from({ length: 8 }, (_, index) => (
+                <div key={index} className="aspect-square animate-pulse rounded-xl bg-muted/20" />
+              ))}
+            </div>
+          ) : error ? (
+            <Card role="alert">
+              <CardContent className="p-8 text-center text-sm text-destructive">
+                Could not load portfolio images: {error.message}
+              </CardContent>
+            </Card>
+          ) : works.length === 0 ? (
+            <Card>
+              <CardContent className="p-10 text-center text-sm text-muted-foreground">
+                No portfolio images yet. Add images above to get started.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {works.map((work) => {
+                const selected = selectedIds.has(work.id);
+                const category = categories.find((item) => item.id === work.categoryId);
+                return (
+                  <button
+                    key={work.id}
+                    type="button"
+                    onClick={() => toggleSelection(work.id)}
+                    aria-pressed={selected}
+                    aria-label={`${selected ? 'Deselect' : 'Select'} portfolio image${category ? ` in ${category.name}` : ''}`}
+                    className={`group relative aspect-square overflow-hidden rounded-xl border bg-muted/10 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      selected ? 'border-primary ring-2 ring-primary/70' : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <img
+                      src={work.imageUrl}
+                      alt={work.altText || 'Graphic portfolio image'}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
+                    {category && (
+                      <span className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-black/75 px-2.5 py-1 text-xs text-white backdrop-blur">
+                        {category.name}
+                      </span>
                     )}
-
-                    <div className="flex-1 min-w-0">
-                      {/* Editable title when selected in bulk mode */}
-                      {bulkMode && isSelected ? (
-                        <Input
-                          className="mb-1 h-8 text-sm font-semibold"
-                          value={bulkTitles[work.id] !== undefined ? bulkTitles[work.id] : work.title}
-                          onChange={(e) => { e.stopPropagation(); handleBulkTitleChange(work.id, e.target.value); }}
-                          onClick={(e) => e.stopPropagation()}
-                          placeholder="Work title"
-                        />
-                      ) : (
-                        <h3 className="font-semibold truncate">{work.title}</h3>
-                      )}
-                      {cat && <p className="text-xs text-primary">{cat.name}</p>}
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {work.published ? 'Published' : 'Draft'} · {work.featured ? 'Featured' : 'Not featured'}
-                        {work.galleryUrls?.length > 0 && ` · ${work.galleryUrls.length} gallery image${work.galleryUrls.length !== 1 ? 's' : ''}`}
-                      </p>
-                      {/* Gallery thumbnail strip */}
-                      {work.galleryUrls?.length > 0 && (
-                        <div className="flex gap-1 mt-2 overflow-x-auto">
-                          {work.galleryUrls.slice(0, 6).map((url, i) => (
-                            <img key={i} src={url} alt={`Gallery ${i + 1}`} className="w-10 h-8 object-cover rounded flex-shrink-0 border border-border" />
-                          ))}
-                          {work.galleryUrls.length > 6 && (
-                            <div className="w-10 h-8 rounded flex-shrink-0 border border-border bg-muted/20 flex items-center justify-center text-[10px] text-muted-foreground">
-                              +{work.galleryUrls.length - 6}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {!bulkMode && (
-                      <div className="flex flex-col gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => startEdit(work)}><Pencil className="w-4 h-4" /></Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm"><Trash2 className="w-4 h-4" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete "{work.title}"?</AlertDialogTitle>
-                              <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => {
-                                remove.mutate({ id: work.id }, {
-                                  onSuccess: () => {
-                                    qc.invalidateQueries({ queryKey: ['cms', 'graphic-works'] });
-                                    toast({ title: 'Work deleted' });
-                                  }
-                                });
-                              }}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                    <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md border border-white/40 bg-black/60 text-white">
+                      {selected && <Check className="h-4 w-4" />}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </div>
     </AdminLayout>
   );

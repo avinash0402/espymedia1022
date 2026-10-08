@@ -1,7 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { MotionEnhancementLayer } from '@/components/motion-enhancement-layer';
 const NotFound = lazy(() => import('@/pages/not-found'));
 const Home = lazy(() => import('@/pages/home'));
 const GraphicDesign = lazy(() => import('@/pages/graphic-design'));
@@ -63,11 +65,36 @@ const queryClient = new QueryClient();
 function Router() {
   const [location] = useLocation();
   const isAdmin = location.startsWith('/admin');
+  const prefersReducedMotion = useReducedMotion();
+  const routes = (
+    <Switch>
+      <Route path="/" component={Home} />
+      <Route path="/graphic-design" component={GraphicDesign} />
+      <Route path="/contact" component={Contact} />
+      <Route path="/diagnostics" component={Diagnostics} />
+      <Route path="/work/:id" component={CaseStudy} />
+      <Route path="/admin" component={AdminLogin} />
+      <Route path="/admin/setup" component={AdminSetup} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/projects" component={AdminProjects} />
+      <Route path="/admin/testimonials" component={AdminTestimonials} />
+      <Route path="/admin/services" component={AdminServices} />
+      <Route path="/admin/settings" component={AdminSettings} />
+      <Route path="/admin/content" component={AdminContent} />
+      <Route path="/admin/graphic" component={AdminGraphic} />
+      <Route path="/admin/leads" component={AdminLeads} />
+      <Route path="/admin/seo" component={AdminSeo} />
+      <Route path="/projects" component={WebDesignProjects} />
+      <Route path="/:slug" component={LegalPage} />
+      <Route component={NotFound} />
+    </Switch>
+  );
 
   return (
     <>
     <ScrollToTop />
     <SeoHead />
+    <MotionEnhancementLayer location={location} disabled={isAdmin} />
     <Suspense
       fallback={
         <div className="min-h-screen bg-[#050505]" role="status">
@@ -75,27 +102,16 @@ function Router() {
         </div>
       }
     >
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/graphic-design" component={GraphicDesign} />
-        <Route path="/contact" component={Contact} />
-        <Route path="/diagnostics" component={Diagnostics} />
-        <Route path="/work/:id" component={CaseStudy} />
-        <Route path="/admin" component={AdminLogin} />
-        <Route path="/admin/setup" component={AdminSetup} />
-        <Route path="/admin/dashboard" component={AdminDashboard} />
-        <Route path="/admin/projects" component={AdminProjects} />
-        <Route path="/admin/testimonials" component={AdminTestimonials} />
-        <Route path="/admin/services" component={AdminServices} />
-        <Route path="/admin/settings" component={AdminSettings} />
-        <Route path="/admin/content" component={AdminContent} />
-        <Route path="/admin/graphic" component={AdminGraphic} />
-        <Route path="/admin/leads" component={AdminLeads} />
-        <Route path="/admin/seo" component={AdminSeo} />
-        <Route path="/projects" component={WebDesignProjects} />
-        <Route path="/:slug" component={LegalPage} />
-        <Route component={NotFound} />
-      </Switch>
+      {isAdmin || prefersReducedMotion !== false ? routes : (
+        <motion.div
+          key={location}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+        >
+          {routes}
+        </motion.div>
+      )}
     </Suspense>
     {!isAdmin && <DeferredChatbot />}
     </>

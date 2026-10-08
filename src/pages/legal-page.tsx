@@ -27,7 +27,11 @@ export default function LegalPage() {
             <p className="mb-10 text-sm text-zinc-500">
               Last updated {page.updatedAt ? new Date(page.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently'}
             </p>
-            <article className="prose prose-lg prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: page.content }} />
+            <article
+              data-advanced-scroll-reveal
+              className="prose prose-lg prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: page.content }}
+            />
           </>
         )}
       </main>

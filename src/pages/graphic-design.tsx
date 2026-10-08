@@ -444,20 +444,6 @@ export default function GraphicDesign() {
                   </svg>
                 </div>
 
-                {/* Title */}
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <div className="flex items-end justify-between gap-2">
-                    <p className="text-sm font-medium text-white leading-snug">{item.title}</p>
-                    <div
-                      className="shrink-0 flex h-7 w-7 items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0"
-                      style={{ background: 'rgba(167,139,250,0.2)', border: '1px solid rgba(167,139,250,0.3)' }}
-                    >
-                      <svg className="h-3 w-3 text-[#a78bfa]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path d="M7 17L17 7M17 7H7M17 7v10" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
               </motion.div>
             ))}
           </motion.div>

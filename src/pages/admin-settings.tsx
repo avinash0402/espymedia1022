@@ -21,6 +21,13 @@ const emptySettings = {
 
 type FormData = typeof emptySettings;
 
+function toFormData(settings?: Settings): FormData {
+  return (Object.keys(emptySettings) as (keyof FormData)[]).reduce((values, key) => {
+    values[key] = settings?.[key] ?? '';
+    return values;
+  }, { ...emptySettings });
+}
+
 export default function AdminSettings() {
   const { data: settings, isLoading } = useGetSettings();
   const updateSettings = useUpdateSettings();
@@ -29,7 +36,7 @@ export default function AdminSettings() {
   const [formData, setFormData] = useState(emptySettings);
 
   useEffect(() => {
-    if (settings) setFormData({ ...emptySettings, ...settings });
+    if (settings) setFormData(toFormData(settings));
   }, [settings]);
 
   const update = (key: keyof FormData, value: string) =>
@@ -41,7 +48,11 @@ export default function AdminSettings() {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
         toast({ title: 'Settings updated successfully' });
       },
-      onError: () => toast({ title: 'Could not save settings', variant: 'destructive' }),
+      onError: (error) => toast({
+        title: 'Could not save settings',
+        description: error instanceof Error ? error.message : 'The settings request failed. Check the API connection and try again.',
+        variant: 'destructive',
+      }),
     });
 
   const field = (key: keyof FormData, label: string, placeholder = '') => (

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, ArrowRight } from 'lucide-react';
+import { X, Send, ArrowRight, Phone } from 'lucide-react';
 import {
   useGetSettings,
   useGetPricingPlans,
@@ -648,6 +648,17 @@ export function Chatbot() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {settings?.phone && !open && (
+        <a
+          href={`tel:${settings.phone.replace(/\D/g, '')}`}
+          aria-label={`Call Espy Media at ${settings.phone}`}
+          className="fixed bottom-[5.5rem] right-4 sm:right-6 z-50 inline-flex h-12 items-center gap-2 rounded-full border border-violet-300/30 bg-[#171023] px-5 text-sm font-semibold text-white transition-colors hover:bg-violet-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+        >
+          <Phone className="h-4 w-4" />
+          <span>Call Us</span>
+        </a>
+      )}
 
       {/* ── Trigger button ──────────────────────────────────────────────── */}
       <motion.button

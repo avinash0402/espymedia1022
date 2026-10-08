@@ -167,7 +167,7 @@ export interface HomepageStat {
 export interface Platform { id: number; name: string; slug: string; logoUrl: string; linkUrl: string; published: boolean; sortOrder: number; }
 export interface PricingPlan { id: number; name: string; price: string; period: string; description: string; features: string[]; ctaText: string; highlighted: boolean; published: boolean; sortOrder: number; }
 export interface GraphicCategory { id: number; name: string; slug: string; }
-export interface GraphicWork { id: number; title: string; slug: string; categoryId?: number; imageUrl: string; galleryUrls: string[]; description: string; altText: string; published: boolean; featured: boolean; sortOrder: number; }
+export interface GraphicWork { id: number; title: string; slug: string; categoryId?: number | null; imageUrl: string; galleryUrls: string[]; description: string; altText: string; published: boolean; featured: boolean; sortOrder: number; }
 export interface LegalPage { slug: string; title: string; content: string; updatedAt?: string; }
 export interface SeoPage { id: number; path: string; metaTitle: string; metaDescription: string; metaKeywords: string; ogTitle: string; ogDescription: string; ogImage: string; twitterTitle: string; twitterDescription: string; canonicalUrl: string; structuredData: Record<string, unknown>; noindex: boolean; }
 
@@ -211,6 +211,9 @@ export function useUpdatePricingPlan() { const qc = useQueryClient(); return use
 export function useDeletePricingPlan() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ id }: { id: number }) => apiFetch(`/cms/pricing/${id}`, { method: 'DELETE' }), onSuccess: () => qc.invalidateQueries({ queryKey: getGetPricingQueryKey() }) }); }
 export function useGetGraphicWorks() { return useQuery<GraphicWork[]>({ queryKey: getGetGraphicWorksQueryKey(), queryFn: () => apiFetch('/cms/graphic-works') }); }
 export function useGetGraphicCategories() { return useQuery<GraphicCategory[]>({ queryKey: getGetGraphicCategoriesQueryKey(), queryFn: () => apiFetch('/cms/graphic-categories') }); }
+export function createGraphicWorkRecord(data: Partial<GraphicWork>) { return apiFetch<GraphicWork>('/cms/graphic-works', { method: 'POST', body: JSON.stringify(data) }); }
+export function updateGraphicWorkRecord(id: number, data: Partial<GraphicWork>) { return apiFetch<GraphicWork>(`/cms/graphic-works/${id}`, { method: 'PATCH', body: JSON.stringify(data) }); }
+export function deleteGraphicWorkRecord(id: number) { return apiFetch('/cms/graphic-works/' + id, { method: 'DELETE' }); }
 export function useCreateGraphicWork() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ data }: { data: Partial<GraphicWork> }) => apiFetch<GraphicWork>('/cms/graphic-works', { method: 'POST', body: JSON.stringify(data) }), onSuccess: () => qc.invalidateQueries({ queryKey: getGetGraphicWorksQueryKey() }) }); }
 export function useUpdateGraphicWork() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ id, data }: { id: number; data: Partial<GraphicWork> }) => apiFetch<GraphicWork>(`/cms/graphic-works/${id}`, { method: 'PATCH', body: JSON.stringify(data) }), onSuccess: () => qc.invalidateQueries({ queryKey: getGetGraphicWorksQueryKey() }) }); }
 export function useDeleteGraphicWork() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ id }: { id: number }) => apiFetch(`/cms/graphic-works/${id}`, { method: 'DELETE' }), onSuccess: () => qc.invalidateQueries({ queryKey: getGetGraphicWorksQueryKey() }) }); }
@@ -600,7 +603,5 @@ export function useAdminLogout() {
 export async function uploadFile(file: File): Promise<{ url: string }> {
   const form = new FormData();
   form.append('file', file);
-  const res = await fetch(`${API_BASE}/upload`, { method: 'POST', body: form, credentials: 'include' });
-  if (!res.ok) throw new Error('Upload failed');
-  return res.json();
+  return apiFetch<{ url: string }>('/upload', { method: 'POST', body: form });
 }

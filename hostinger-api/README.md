@@ -83,6 +83,17 @@ admin login, CMS updates, leads, and image uploads are handled by the PHP API.
 Uploads are stored under this API's `uploads/` directory; ensure the Hostinger
 account has enough space and that this directory is writable by PHP.
 
+## Sitemap and Google Search Console
+
+The frontend deployment publishes `public/sitemap.xml` at
+`https://espymediaagency.in/sitemap.xml` and `public/robots.txt` references it.
+After deploying the frontend, open that URL and confirm it returns XML rather
+than the SPA HTML page. In Google Search Console, verify the
+`https://espymediaagency.in/` property, open **Sitemaps**, submit
+`sitemap.xml`, and resolve any reported fetch or URL errors. Update the sitemap
+when public page routes change; do not include admin, diagnostics, or private
+URLs.
+
 ## First admin user
 
 After the schema is imported and the frontend points at the API, use the

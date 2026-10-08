@@ -55,6 +55,14 @@ export function Footer() {
             >
               {settings?.contactEmail || 'hello@espymedia.in'}
             </a>
+            {settings?.phone && (
+              <a
+                href={`tel:${settings.phone.replace(/\D/g, '')}`}
+                className="text-zinc-300 text-sm font-inter hover:text-white transition-colors block mb-3"
+              >
+                {settings.phone}
+              </a>
+            )}
             <p className="text-zinc-500 text-sm font-inter flex items-center gap-1.5">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
