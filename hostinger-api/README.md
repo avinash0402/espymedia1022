@@ -82,6 +82,11 @@ The frontend still uses the existing React UI and API contract. Public content,
 admin login, CMS updates, leads, and image uploads are handled by the PHP API.
 Uploads are stored under this API's `uploads/` directory; ensure the Hostinger
 account has enough space and that this directory is writable by PHP.
+Admin sessions use a 30-day rolling lifetime: authenticated activity refreshes
+the browser cookie and PHP session data, and the API sets
+`session.gc_maxlifetime` to the same interval. If Hostinger disables this
+PHP setting, set `session.gc_maxlifetime` to at least `2592000` seconds in the
+API subdomain's PHP configuration.
 
 ## Sitemap and Google Search Console
 

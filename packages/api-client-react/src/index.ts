@@ -11,6 +11,13 @@ import {
 
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
 
+export class ApiRequestError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = 'ApiRequestError';
+  }
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
@@ -30,7 +37,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     } catch {
       // Keep non-JSON API responses readable.
     }
-    throw new Error(`HTTP ${res.status}: ${message || res.statusText}`);
+    throw new ApiRequestError(`HTTP ${res.status}: ${message || res.statusText}`, res.status);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
@@ -581,8 +588,14 @@ export function useGetAuthMe(
 ) {
   return useQuery<{ id: number; username: string } | null>({
     queryKey: ['auth-me'],
-    queryFn: () =>
-      apiFetch<{ id: number; username: string }>('/auth/me').catch(() => null),
+    queryFn: async () => {
+      try {
+        return await apiFetch<{ id: number; username: string }>('/auth/me');
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.status === 401) return null;
+        throw error;
+      }
+    },
     retry: false,
     ...options,
   });

@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 const LEGACY_ADMIN_HASH = '$2a$10$rrJm7j63zrlWGxINgIG7NeFLYkkFsrLmcxVeEld430rhnLdEkSwyC';
+const ADMIN_SESSION_LIFETIME_SECONDS = 30 * 24 * 60 * 60;
 
 $privateConfigPath = getenv('HOSTINGER_API_CONFIG') ?: dirname(__DIR__) . '/hostinger-api-config.php';
 $privateConfig = [];
@@ -215,6 +216,30 @@ function requireAuth(): void
     if (empty($_SESSION['userId'])) {
         fail('Unauthorized', 401);
     }
+    keepAdminSessionAlive();
+}
+
+function keepAdminSessionAlive(): void
+{
+    if (empty($_SESSION['userId'])) {
+        return;
+    }
+    $_SESSION['lastActivityAt'] = time();
+
+    $params = session_get_cookie_params();
+    $options = [
+        'expires' => time() + ADMIN_SESSION_LIFETIME_SECONDS,
+        'path' => $params['path'],
+        'secure' => $params['secure'],
+        'httponly' => $params['httponly'],
+        'samesite' => $params['samesite'] ?: 'None',
+    ];
+    if ($params['domain'] !== '') {
+        $options['domain'] = $params['domain'];
+    }
+    if (!setcookie(session_name(), session_id(), $options)) {
+        error_log('[hostinger-api] Could not refresh the admin session cookie');
+    }
 }
 
 function requireMethod(string $method): void
@@ -252,10 +277,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     exit;
 }
 
+$forwardedProto = strtolower(trim(explode(',', (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0]));
 $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    || $forwardedProto === 'https';
+if (ini_set('session.gc_maxlifetime', (string)ADMIN_SESSION_LIFETIME_SECONDS) === false) {
+    error_log('[hostinger-api] Could not set session.gc_maxlifetime; configure it to at least 2592000 seconds in Hostinger PHP settings');
+}
 session_set_cookie_params([
-    'lifetime' => 7 * 24 * 60 * 60,
+    'lifetime' => ADMIN_SESSION_LIFETIME_SECONDS,
     'path' => '/',
     'secure' => $isSecure,
     'httponly' => true,
@@ -468,6 +497,7 @@ try {
         if (empty($_SESSION['userId'])) {
             fail('Not authenticated', 401);
         }
+        keepAdminSessionAlive();
         respond(['id' => (int)$_SESSION['userId'], 'username' => $_SESSION['userEmail'] ?? '']);
     }
     if ($path === '/auth/logout' && $method === 'POST') {

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { ApiRequestError } from '@workspace/api-client-react';
 
 export default function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -27,8 +28,14 @@ export default function AdminLogin() {
           toast({ title: 'Login successful' });
           setLocation('/admin/dashboard');
         },
-        onError: () => {
-          toast({ title: 'Invalid credentials', variant: 'destructive' });
+        onError: (error) => {
+          toast({
+            title: error instanceof ApiRequestError && error.status === 401
+              ? 'Invalid email or password'
+              : 'Could not sign in',
+            description: error.message,
+            variant: 'destructive',
+          });
         }
       }
     );

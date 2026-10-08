@@ -95,7 +95,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && (error || !user) && location !== '/admin') {
+    if (!isLoading && !error && !user && location !== '/admin') {
       setLocation('/admin');
     }
   }, [error, isLoading, location, setLocation, user]);
@@ -113,7 +113,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (error || !user) return null;
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-md space-y-3 text-center">
+          <h1 className="text-xl font-semibold">Admin session could not be checked</h1>
+          <p role="alert" className="text-sm text-muted-foreground">
+            {error.message}
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  if (!user) return null;
 
   const handleLogout = () => {
     logout.mutate(undefined, {
