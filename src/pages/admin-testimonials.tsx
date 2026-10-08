@@ -112,7 +112,7 @@ export default function AdminTestimonials() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2">Testimonials</h1>
-            <p className="text-muted-foreground text-sm">Manage client testimonials shown on the homepage. Toggle "Published" to control visibility.</p>
+            <p className="text-muted-foreground text-sm">Manage all homepage testimonials, including the original featured reviews. Edit, publish, or remove them here.</p>
           </div>
 
           <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) handleDialogClose(); else setDialogOpen(open); }}>

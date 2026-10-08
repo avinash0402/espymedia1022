@@ -16,7 +16,6 @@ import { ShinyCta } from '@/components/shiny-cta';
 import { HeroRichText } from '@/components/hero-rich-text';
 import { normalizeHeroHeadline } from '@/components/rich-text-highlight-editor';
 import {
-  useGetTestimonials,
   useGetServices,
   useGetPlatforms,
   useGetPricingPlans,
@@ -235,7 +234,6 @@ const PRICING_PLANS = [
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
-  const { data: testimonials } = useGetTestimonials({ published: true });
   const { data: services } = useGetServices();
   const { data: platforms } = useGetPlatforms();
   const { data: pricingPlans } = useGetPricingPlans();
@@ -248,10 +246,6 @@ export default function Home() {
   const pricingWhatsappHref = (planName: string) => waNumber
     ? `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hi Espy Media, I want to get started with the ${planName}. Please share more details.`)}`
     : '/contact';
-  const displayTestimonials = testimonials?.slice(0, 6) || [];
-  const featuredTestimonial = displayTestimonials[0];
-  const gridTestimonials    = displayTestimonials.slice(1, 4);
-
   const serviceList = services || [
     { id: 1, slug: 'web-design',       name: 'Web Design & Build',    headline: 'Sites engineered to convert, not just look good',      description: 'From storefronts to admin panels, we design and ship fast, conversion-focused sites — fully responsive, on-brand, and built to be handed off with zero friction.' },
     { id: 2, slug: 'paid-ads',         name: 'Paid Ads & Lead Gen',   headline: 'Meta and Google campaigns built around a real funnel', description: 'Shipped with tracking in place so every lead is traceable back to spend.' },
