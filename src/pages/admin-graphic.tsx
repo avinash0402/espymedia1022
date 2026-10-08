@@ -21,6 +21,7 @@ import {
   ImagePlus,
   Loader2,
   Plus,
+  Star,
   Square,
   Tag,
   Trash2,
@@ -40,6 +41,8 @@ import {
 
 const slugify = (value: string) =>
   value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+const MAX_FEATURED_GRAPHIC_WORKS = 6;
 
 async function settleInBatches<T>(
   items: T[],
@@ -67,6 +70,11 @@ export default function AdminGraphic() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isApplying, setIsApplying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const featuredCount = works.filter((work) => work.featured).length;
+  const selectedWorks = works.filter((work) => selectedIds.has(work.id));
+  const selectedFeaturedCount = selectedWorks.filter((work) => work.featured).length;
+  const selectedUnfeaturedCount = selectedWorks.length - selectedFeaturedCount;
+  const remainingFeaturedSlots = Math.max(0, MAX_FEATURED_GRAPHIC_WORKS - featuredCount);
 
   const refreshWorks = () => queryClient.invalidateQueries({ queryKey: ['cms', 'graphic-works'] });
   const refreshCategories = () => queryClient.invalidateQueries({ queryKey: ['cms', 'graphic-categories'] });
@@ -161,6 +169,42 @@ export default function AdminGraphic() {
     if (!failed) setSelectedIds(new Set());
   };
 
+  const setSelectedFeatured = async (featured: boolean) => {
+    const targets = selectedWorks.filter((work) => work.featured !== featured);
+    if (!targets.length) return;
+    if (featured && targets.length > remainingFeaturedSlots) {
+      toast({
+        title: `Only ${remainingFeaturedSlots} homepage feature slot${remainingFeaturedSlots === 1 ? '' : 's'} left`,
+        description: `Unfeature existing images or select no more than ${remainingFeaturedSlots} additional image${remainingFeaturedSlots === 1 ? '' : 's'}.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsApplying(true);
+    const results: PromiseSettledResult<unknown>[] = [];
+    for (const work of targets) {
+      try {
+        results.push({ status: 'fulfilled', value: await updateGraphicWorkRecord(work.id, { featured }) });
+      } catch (reason) {
+        results.push({ status: 'rejected', reason });
+      }
+    }
+    await refreshWorks();
+    setIsApplying(false);
+    const updated = results.filter((result) => result.status === 'fulfilled').length;
+    const failed = results.length - updated;
+    toast({
+      title: failed
+        ? `${updated} updated, ${failed} failed`
+        : featured
+          ? `${updated} image${updated === 1 ? '' : 's'} featured on the homepage`
+          : `${updated} image${updated === 1 ? '' : 's'} removed from homepage features`,
+      ...(failed ? { variant: 'destructive' as const } : {}),
+    });
+    if (!failed) setSelectedIds(new Set());
+  };
+
   const deleteSelected = async () => {
     if (!selectedIds.size) return;
     setIsDeleting(true);
@@ -183,7 +227,7 @@ export default function AdminGraphic() {
         <header>
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-primary">Portfolio CMS</p>
           <h1 className="mb-1 text-2xl font-bold sm:text-3xl">Graphic Portfolio</h1>
-          <p className="text-sm text-muted-foreground">Upload images, select them, then assign a category or delete them.</p>
+          <p className="text-sm text-muted-foreground">Upload images, select them, then assign categories, choose up to 6 homepage features, or delete them. Featured images are selected independently of category.</p>
         </header>
 
         <Card className="border-glow">
@@ -255,7 +299,12 @@ export default function AdminGraphic() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-semibold">Images <span className="text-muted-foreground">({works.length})</span></h2>
-              <p className="text-xs text-muted-foreground">Select images using the corner checkboxes.</p>
+              <p className="text-xs text-muted-foreground">
+                Select images using the corner checkboxes. Homepage features: {featuredCount}/{MAX_FEATURED_GRAPHIC_WORKS}.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Until you feature an image, the homepage keeps showing its first 6 published images. After you choose features, it shows only those images.
+              </p>
             </div>
             {works.length > 0 && (
               <Button type="button" variant="outline" size="sm" onClick={toggleAll}>
@@ -286,6 +335,35 @@ export default function AdminGraphic() {
                   {isApplying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
                   Assign category
                 </Button>
+                {selectedUnfeaturedCount > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void setSelectedFeatured(true)}
+                    disabled={isApplying || isDeleting || selectedUnfeaturedCount > remainingFeaturedSlots}
+                  >
+                    <Star className="mr-2 h-4 w-4" />
+                    Feature selected
+                  </Button>
+                )}
+                {selectedFeaturedCount > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void setSelectedFeatured(false)}
+                    disabled={isApplying || isDeleting}
+                  >
+                    <Star className="mr-2 h-4 w-4" />
+                    Unfeature selected
+                  </Button>
+                )}
+                {selectedUnfeaturedCount > remainingFeaturedSlots && (
+                  <span className="w-full text-xs text-muted-foreground">
+                    Unfeature existing images or select no more than {remainingFeaturedSlots} additional image{remainingFeaturedSlots === 1 ? '' : 's'}.
+                  </span>
+                )}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button type="button" size="sm" variant="destructive" disabled={isApplying || isDeleting}>
@@ -363,6 +441,15 @@ export default function AdminGraphic() {
                     {category && (
                       <span className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-black/75 px-2.5 py-1 text-xs text-white backdrop-blur">
                         {category.name}
+                      </span>
+                    )}
+                    {work.featured && (
+                      <span
+                        className="absolute left-2 top-2 flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground"
+                        title="Featured on homepage"
+                        aria-label="Featured on homepage"
+                      >
+                        <Star className="h-4 w-4 fill-current" />
                       </span>
                     )}
                     <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-md border border-white/40 bg-black/60 text-white">

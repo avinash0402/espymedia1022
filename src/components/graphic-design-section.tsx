@@ -7,7 +7,10 @@ import { useGetGraphicWorks } from '@workspace/api-client-react';
 
 export function GraphicDesignSection() {
   const { data: cmsWorks, isLoading, error } = useGetGraphicWorks();
-  const galleryItems = cmsWorks?.filter((work) => work.published && work.imageUrl).map((work) => ({
+  const publishedWorks = cmsWorks?.filter((work) => work.published && work.imageUrl) || [];
+  const featuredWorks = publishedWorks.filter((work) => work.featured);
+  const homepageWorks = (featuredWorks.length > 0 ? featuredWorks : publishedWorks).slice(0, 6);
+  const galleryItems = homepageWorks.map((work) => ({
     image: work.imageUrl,
     text: '',
   })) || [];
