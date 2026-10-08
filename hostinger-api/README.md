@@ -27,6 +27,15 @@ credentials stay on the Hostinger server.
 The schema inserts initial site settings and default content for an empty
 database. It does not copy existing production data.
 
+## Homepage FAQs
+
+For an existing Hostinger database, run `hostinger_faq_setup.sql` from
+phpMyAdmin to create the FAQ table and add starter questions. The insert is
+safe to run again: it adds missing questions and does not overwrite existing
+answers. Upload the current `index.php` API and deploy the current frontend to
+enable the public homepage FAQ section and the authenticated `/admin/faqs`
+editor. New installations can use the FAQ table definition in `schema.sql`.
+
 ## Deploy the API
 
 1. Create an API subdomain in Hostinger, such as `api.example.com`, with HTTPS.
@@ -91,6 +100,16 @@ the browser cookie and PHP session data, and the API sets
 `session.gc_maxlifetime` to the same interval. If Hostinger disables this
 PHP setting, set `session.gc_maxlifetime` to at least `2592000` seconds in the
 API subdomain's PHP configuration.
+
+The API makes one bounded retry when opening MySQL and when a read query loses
+its connection (driver errors 2002, 2003, 2006, 2013, or 2055). It does not
+retry database writes, to avoid duplicating changes. If `/api/diagnostics`
+reports a failure, use its SQLSTATE/MySQL error code and the matching Hostinger
+PHP error log entry to investigate. Check hPanel for database availability,
+connection limits, and whether the configured database host is the one shown
+in the database details. Do not switch to persistent PDO connections as a
+workaround: on shared hosting those can consume the account's limited MySQL
+connections.
 
 ## Sitemap and Google Search Console
 

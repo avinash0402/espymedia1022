@@ -8,6 +8,7 @@ import {
   Check, ExternalLink,
 } from 'lucide-react';
 import { TestimonialSection } from '@/components/testimonial-section';
+import { FaqSection } from '@/components/faq-section';
 import { CountUp } from '@/components/count-up';
 import { NavBar } from '@/components/nav-bar';
 import { Footer } from '@/components/footer';
@@ -1058,6 +1059,8 @@ export default function Home() {
             </motion.p>
           </div>
         </section>
+
+        <FaqSection />
 
         {/* ── CTA ──────────────────────────────────────────────────── */}
         <section className="py-14 md:py-32 px-4 md:px-6 bg-zinc-950/40 text-center">

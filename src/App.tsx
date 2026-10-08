@@ -14,6 +14,7 @@ const AdminSetup = lazy(() => import('@/pages/admin-setup'));
 const AdminDashboard = lazy(() => import('@/pages/admin-dashboard'));
 const AdminProjects = lazy(() => import('@/pages/admin-projects'));
 const AdminTestimonials = lazy(() => import('@/pages/admin-testimonials'));
+const AdminFaq = lazy(() => import('@/pages/admin-faq'));
 const AdminServices = lazy(() => import('@/pages/admin-services'));
 const AdminSettings = lazy(() => import('@/pages/admin-settings'));
 const AdminContent = lazy(() => import('@/pages/admin-content'));
@@ -94,6 +95,7 @@ function Router() {
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin/projects" component={AdminProjects} />
       <Route path="/admin/testimonials" component={AdminTestimonials} />
+      <Route path="/admin/faqs" component={AdminFaq} />
       <Route path="/admin/services" component={AdminServices} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/content" component={AdminContent} />

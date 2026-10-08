@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { useEffect } from 'react';
 import {
   LayoutDashboard, Briefcase, MessageSquare, Settings, LogOut,
-  Wrench, Layers3, Image, Users, Search, Menu,
+  Wrench, Layers3, Image, Users, Search, Menu, CircleHelp,
 } from 'lucide-react';
 import { useGetAuthMe, useAdminLogout } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ const navItems = [
   { href: '/admin/projects',     label: 'Web Projects',      icon: Briefcase },
   { href: '/admin/graphic',      label: 'Graphic Portfolio', icon: Image },
   { href: '/admin/testimonials', label: 'Testimonials',      icon: MessageSquare },
+  { href: '/admin/faqs',         label: 'FAQs',               icon: CircleHelp },
   { href: '/admin/leads',        label: 'Leads',             icon: Users },
   { href: '/admin/services',     label: 'Services',          icon: Wrench },
   { href: '/admin/content',      label: 'CMS',               icon: Layers3 },

@@ -173,6 +173,7 @@ export interface HomepageStat {
 
 export interface Platform { id: number; name: string; slug: string; logoUrl: string; linkUrl: string; published: boolean; sortOrder: number; }
 export interface PricingPlan { id: number; name: string; price: string; period: string; description: string; features: string[]; ctaText: string; highlighted: boolean; published: boolean; sortOrder: number; }
+export interface Faq { id: number; question: string; answer: string; sortOrder: number; published: boolean; }
 export interface GraphicCategory { id: number; name: string; slug: string; }
 export interface GraphicWork { id: number; title: string; slug: string; categoryId?: number | null; imageUrl: string; galleryUrls: string[]; description: string; altText: string; published: boolean; featured: boolean; sortOrder: number; }
 export interface LegalPage { slug: string; title: string; content: string; updatedAt?: string; }
@@ -203,6 +204,8 @@ export const getGetSettingsQueryKey = () => ['settings'] as const;
 export const getGetDashboardStatsQueryKey = () => ['dashboard-stats'] as const;
 export const getGetPlatformsQueryKey = () => ['cms', 'platforms'] as const;
 export const getGetPricingQueryKey = () => ['cms', 'pricing'] as const;
+export const getGetFaqsQueryKey = () => ['faqs'] as const;
+export const getGetCmsFaqsQueryKey = () => ['cms', 'faqs'] as const;
 export const getGetGraphicWorksQueryKey = () => ['cms', 'graphic-works'] as const;
 export const getGetGraphicCategoriesQueryKey = () => ['cms', 'graphic-categories'] as const;
 export const getGetLegalPagesQueryKey = () => ['cms', 'legal'] as const;
@@ -216,6 +219,11 @@ export function useGetPricingPlans() { return useQuery<PricingPlan[]>({ queryKey
 export function useCreatePricingPlan() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ data }: { data: Partial<PricingPlan> }) => apiFetch<PricingPlan>('/cms/pricing', { method: 'POST', body: JSON.stringify(data) }), onSuccess: () => qc.invalidateQueries({ queryKey: getGetPricingQueryKey() }) }); }
 export function useUpdatePricingPlan() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ id, data }: { id: number; data: Partial<PricingPlan> }) => apiFetch<PricingPlan>(`/cms/pricing/${id}`, { method: 'PATCH', body: JSON.stringify(data) }), onSuccess: () => qc.invalidateQueries({ queryKey: getGetPricingQueryKey() }) }); }
 export function useDeletePricingPlan() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ id }: { id: number }) => apiFetch(`/cms/pricing/${id}`, { method: 'DELETE' }), onSuccess: () => qc.invalidateQueries({ queryKey: getGetPricingQueryKey() }) }); }
+export function useGetFaqs(options?: Omit<UseQueryOptions<Faq[]>, 'queryKey' | 'queryFn'>) { return useQuery<Faq[]>({ queryKey: getGetFaqsQueryKey(), queryFn: () => apiFetch('/faqs'), ...options }); }
+export function useGetCmsFaqs() { return useQuery<Faq[]>({ queryKey: getGetCmsFaqsQueryKey(), queryFn: () => apiFetch('/cms/faqs') }); }
+export function useCreateFaq() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ data }: { data: Partial<Faq> }) => apiFetch<Faq>('/cms/faqs', { method: 'POST', body: JSON.stringify(data) }), onSuccess: () => { qc.invalidateQueries({ queryKey: getGetCmsFaqsQueryKey() }); qc.invalidateQueries({ queryKey: getGetFaqsQueryKey() }); } }); }
+export function useUpdateFaq() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ id, data }: { id: number; data: Partial<Faq> }) => apiFetch<Faq>(`/cms/faqs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }), onSuccess: () => { qc.invalidateQueries({ queryKey: getGetCmsFaqsQueryKey() }); qc.invalidateQueries({ queryKey: getGetFaqsQueryKey() }); } }); }
+export function useDeleteFaq() { const qc = useQueryClient(); return useMutation({ mutationFn: ({ id }: { id: number }) => apiFetch(`/cms/faqs/${id}`, { method: 'DELETE' }), onSuccess: () => { qc.invalidateQueries({ queryKey: getGetCmsFaqsQueryKey() }); qc.invalidateQueries({ queryKey: getGetFaqsQueryKey() }); } }); }
 export function useGetGraphicWorks() { return useQuery<GraphicWork[]>({ queryKey: getGetGraphicWorksQueryKey(), queryFn: () => apiFetch('/cms/graphic-works') }); }
 export function useGetGraphicCategories() { return useQuery<GraphicCategory[]>({ queryKey: getGetGraphicCategoriesQueryKey(), queryFn: () => apiFetch('/cms/graphic-categories') }); }
 export function createGraphicWorkRecord(data: Partial<GraphicWork>) { return apiFetch<GraphicWork>('/cms/graphic-works', { method: 'POST', body: JSON.stringify(data) }); }

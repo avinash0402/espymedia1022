@@ -355,6 +355,10 @@ $testimonialMap = [
     'quote' => 'quote', 'rating' => 'rating', 'avatarUrl' => 'avatar_url',
     'published' => 'published', 'sortOrder' => 'sort_order', 'createdAt' => 'created_at',
 ];
+$faqMap = [
+    'id' => 'id', 'question' => 'question', 'answer' => 'answer',
+    'sortOrder' => 'sort_order', 'published' => 'published',
+];
 $blogMap = [
     'id' => 'id', 'title' => 'title', 'slug' => 'slug', 'excerpt' => 'excerpt',
     'content' => 'content', 'coverImageUrl' => 'cover_image_url', 'author' => 'author',
@@ -689,6 +693,14 @@ try {
         $where = ($_GET['published'] ?? '') === 'true' ? ' WHERE published = 1' : '';
         respond(decodeRows(queryRows("SELECT * FROM testimonials{$where} ORDER BY sort_order ASC, created_at DESC"), $testimonialMap, [], ['published']));
     }
+    if ($path === '/faqs' && $method === 'GET') {
+        respond(decodeRows(
+            queryRows('SELECT * FROM faqs WHERE published = 1 ORDER BY sort_order ASC, id ASC'),
+            $faqMap,
+            [],
+            ['published']
+        ));
+    }
     if (preg_match('#^/testimonials/(\d+)$#', $path, $matches)) {
         requireAuth();
         $id = (int)$matches[1];
@@ -838,6 +850,7 @@ try {
         'graphic-categories' => ['table' => 'graphic_categories', 'map' => $categoryMap, 'json' => [], 'bool' => [], 'fields' => ['name' => 'name', 'slug' => 'slug'], 'order' => 'name'],
         'graphic-works' => ['table' => 'graphic_works', 'map' => $workMap, 'json' => ['galleryUrls'], 'bool' => ['published', 'featured'], 'fields' => ['title' => 'title', 'slug' => 'slug', 'categoryId' => 'category_id', 'imageUrl' => 'image_url', 'galleryUrls' => 'gallery_urls', 'description' => 'description', 'altText' => 'alt_text', 'published' => 'published', 'featured' => 'featured', 'sortOrder' => 'sort_order'], 'order' => 'sort_order, id'],
         'seo' => ['table' => 'seo_pages', 'map' => $seoMap, 'json' => ['structuredData'], 'bool' => ['noindex'], 'fields' => ['path' => 'path', 'metaTitle' => 'meta_title', 'metaDescription' => 'meta_description', 'metaKeywords' => 'meta_keywords', 'ogTitle' => 'og_title', 'ogDescription' => 'og_description', 'ogImage' => 'og_image', 'twitterTitle' => 'twitter_title', 'twitterDescription' => 'twitter_description', 'canonicalUrl' => 'canonical_url', 'structuredData' => 'structured_data', 'noindex' => 'noindex'], 'order' => 'path'],
+        'faqs' => ['table' => 'faqs', 'map' => $faqMap, 'json' => [], 'bool' => ['published'], 'fields' => ['question' => 'question', 'answer' => 'answer', 'sortOrder' => 'sort_order', 'published' => 'published'], 'order' => 'sort_order, id'],
     ];
     if (preg_match('#^/cms/([^/]+)(?:/([^/]+))?$#', $path, $matches)) {
         $resource = $matches[1];
@@ -859,12 +872,18 @@ try {
             $table = $config['table'];
             $map = $config['map'];
             if ($id === null && $method === 'GET') {
+                if ($resource === 'faqs') {
+                    requireAuth();
+                }
                 respond(decodeRows(queryRows("SELECT * FROM {$table} ORDER BY {$config['order']}"), $map, $config['json'], $config['bool']));
             }
             if ($id === null && $method === 'POST') {
                 requireAuth();
                 if ($resource === 'seo' && empty($body['path'])) {
                     fail('path is required', 400);
+                }
+                if ($resource === 'faqs' && (trim((string)($body['question'] ?? '')) === '' || trim((string)($body['answer'] ?? '')) === '')) {
+                    fail('Question and answer are required', 400);
                 }
                 if ($resource === 'graphic-works' && !empty($body['featured'])) {
                     $count = queryOne('SELECT COUNT(*) AS count FROM graphic_works WHERE featured = 1');
@@ -891,6 +910,13 @@ try {
                 requireAuth();
                 $numericId = ctype_digit($id) ? (int)$id : $id;
                 if ($method === 'PATCH') {
+                    if ($resource === 'faqs') {
+                        foreach (['question', 'answer'] as $field) {
+                            if (array_key_exists($field, $body) && trim((string)$body[$field]) === '') {
+                                fail('Question and answer cannot be empty', 400);
+                            }
+                        }
+                    }
                     if ($resource === 'graphic-works' && !empty($body['featured'])) {
                         $count = queryOne('SELECT COUNT(*) AS count FROM graphic_works WHERE featured = 1 AND id <> ?', [$numericId]);
                         if ((int)($count['count'] ?? 0) >= 6) {
