@@ -90,6 +90,7 @@ function database(): PDO
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_TIMEOUT => 5,
         ]
     );
     return $pdo;
@@ -219,6 +220,45 @@ function requireAuth(): void
     keepAdminSessionAlive();
 }
 
+function frontendOriginAllowed(string $origin, array $configuredOrigins): bool
+{
+    if (in_array($origin, $configuredOrigins, true)) {
+        return true;
+    }
+
+    $requestParts = parse_url($origin);
+    if (!is_array($requestParts) || !isset($requestParts['scheme'], $requestParts['host'])) {
+        return false;
+    }
+    $requestHost = strtolower($requestParts['host']);
+    $requestPort = isset($requestParts['port']) ? ':' . $requestParts['port'] : '';
+
+    foreach ($configuredOrigins as $configuredOrigin) {
+        $configuredParts = parse_url($configuredOrigin);
+        if (!is_array($configuredParts) || !isset($configuredParts['scheme'], $configuredParts['host'])) {
+            continue;
+        }
+        if ($requestParts['scheme'] !== $configuredParts['scheme']) {
+            continue;
+        }
+
+        $configuredHost = strtolower($configuredParts['host']);
+        $configuredPort = isset($configuredParts['port']) ? ':' . $configuredParts['port'] : '';
+        if ($requestPort !== $configuredPort || substr_count($configuredHost, '.') < 1) {
+            continue;
+        }
+
+        $wwwHost = str_starts_with($configuredHost, 'www.')
+            ? substr($configuredHost, 4)
+            : 'www.' . $configuredHost;
+        if ($requestHost === $wwwHost) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function keepAdminSessionAlive(): void
 {
     if (empty($_SESSION['userId'])) {
@@ -264,7 +304,7 @@ $allowedOrigins = array_values(array_filter(array_map(
     explode(',', (string)(configValue('FRONTEND_ORIGIN', '') ?: ''))
 ), static fn(string $allowed): bool => $allowed !== ''));
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
+if ($origin !== '' && frontendOriginAllowed($origin, $allowedOrigins)) {
     header('Access-Control-Allow-Origin: ' . $origin);
     header('Access-Control-Allow-Credentials: true');
     header('Vary: Origin');
@@ -376,7 +416,7 @@ try {
             explode(',', (string)(configValue('FRONTEND_ORIGIN', '') ?: ''))
         ), static fn(string $allowed): bool => $allowed !== ''));
         $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-        $originAllowed = $requestOrigin === '' || in_array($requestOrigin, $allowedOrigins, true);
+        $originAllowed = $requestOrigin === '' || frontendOriginAllowed($requestOrigin, $allowedOrigins);
         $checks = [
             'databaseConfig' => [
                 'ok' => $hasMysqlConfig,

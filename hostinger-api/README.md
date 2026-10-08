@@ -52,8 +52,9 @@ database. It does not copy existing production data.
    ```
 
    Find the hostname, full database name, and username in hPanel's database
-   details. `FRONTEND_ORIGIN` accepts one or more exact browser origins,
-   comma-separated with no paths or trailing slashes. For example:
+   details. `FRONTEND_ORIGIN` accepts one or more browser origins,
+   comma-separated with no paths or trailing slashes. The API also allows the
+   matching `www` or apex variant of each configured domain. For example:
    `https://espymedia1022.vercel.app,https://espymediaagency.in`.
    `API_PUBLIC_URL` is optional.
 3. Save the file with permissions restricted to the account owner where the
@@ -77,6 +78,9 @@ website's own domain (for example `api.example.com` and `www.example.com`).
 Set `VITE_API_BASE_URL` in Vercel to the API origin ending in `/api`, for
 example `https://api.example.com/api`, then redeploy the frontend. The PHP API
 allows credentialed requests only from origins listed in `FRONTEND_ORIGIN`.
+For this site, the production value is
+`https://api.espymediaagency.in/api`. Do not deploy with the placeholder
+`https://api.example.com/api`; it causes browser API requests to fail.
 
 The frontend still uses the existing React UI and API contract. Public content,
 admin login, CMS updates, leads, and image uploads are handled by the PHP API.

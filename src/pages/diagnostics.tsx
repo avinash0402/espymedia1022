@@ -72,7 +72,10 @@ export default function Diagnostics() {
           <div className="mt-8 rounded-lg border border-red-400/40 bg-red-950/30 p-5 text-red-200">
             <div className="flex items-center gap-2 font-semibold"><AlertCircle className="h-5 w-5" />Diagnostics API could not respond</div>
             <p className="mt-2 break-words text-sm">{state.requestError}</p>
-            <p className="mt-2 text-sm">The browser could not read a response. Check that the API is online and that this website’s exact origin is listed in Hostinger FRONTEND_ORIGIN.</p>
+            <p className="mt-2 text-sm">
+              The browser could not read a response from <code>{API_BASE}/diagnostics</code> for website origin <code>{window.location.origin}</code>.
+              Check that the API is online and that the API allows this origin in Hostinger FRONTEND_ORIGIN.
+            </p>
           </div>
         )}
 

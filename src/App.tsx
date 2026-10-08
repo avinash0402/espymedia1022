@@ -60,7 +60,23 @@ function ScrollToTop() {
   return null;
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      retry: (failureCount, error) => {
+        if (error instanceof Error && 'status' in error) {
+          const status = Number(error.status);
+          return failureCount < 2 && status >= 500;
+        }
+        return failureCount < 2 && error instanceof TypeError;
+      },
+      retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 3_000),
+    },
+  },
+});
 
 function Router() {
   const [location] = useLocation();
@@ -97,8 +113,11 @@ function Router() {
     <MotionEnhancementLayer location={location} disabled={isAdmin} />
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#050505]" role="status">
-          <span className="sr-only">Loading page</span>
+        <div className="flex min-h-screen items-center justify-center bg-[#050505] text-zinc-400" role="status">
+          <span className="flex items-center gap-3 text-sm">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" aria-hidden="true" />
+            Loading page…
+          </span>
         </div>
       }
     >
