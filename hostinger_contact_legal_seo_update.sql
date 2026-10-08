@@ -83,7 +83,7 @@ VALUES
   '',
   'Espy Media | Web Design, Digital Marketing & Branding',
   'Conversion-focused websites, digital marketing, lead generation, and creative design for growing businesses.',
-  '',
+  'https://www.espymediaagency.in/',
   JSON_OBJECT(
     '@context', 'https://schema.org',
     '@type', 'ProfessionalService',
@@ -104,7 +104,7 @@ VALUES
   '',
   'Privacy Policy | Espy Media',
   'Learn how Espy Media handles website enquiries and personal information.',
-  '',
+  'https://www.espymediaagency.in/privacy-policy',
   JSON_OBJECT('@context', 'https://schema.org', '@type', 'WebPage', 'name', 'Privacy Policy', 'about', 'Espy Media privacy practices'),
   0
 ),
@@ -118,12 +118,12 @@ VALUES
   '',
   'Contact Espy Media | Start a Project',
   'Tell us about your project and connect with the Espy Media team.',
-  'https://espymediaagency.in/contact',
+  'https://www.espymediaagency.in/contact',
   JSON_OBJECT(
     '@context', 'https://schema.org',
     '@type', 'ContactPage',
     'name', 'Contact Espy Media',
-    'url', 'https://espymediaagency.in/contact',
+    'url', 'https://www.espymediaagency.in/contact',
     'mainEntity', JSON_OBJECT(
       '@type', 'Organization',
       'name', 'Espy Media',
@@ -143,7 +143,7 @@ VALUES
   '',
   'Terms & Conditions | Espy Media',
   'Read the terms that apply to use of the Espy Media website and enquiries.',
-  '',
+  'https://www.espymediaagency.in/terms-conditions',
   JSON_OBJECT('@context', 'https://schema.org', '@type', 'WebPage', 'name', 'Terms & Conditions', 'about', 'Terms for using the Espy Media website'),
   0
 )
@@ -159,5 +159,21 @@ ON DUPLICATE KEY UPDATE
   canonical_url = VALUES(canonical_url),
   structured_data = VALUES(structured_data),
   noindex = VALUES(noindex);
+
+UPDATE seo_pages
+SET canonical_url = CONCAT(
+  'https://www.espymediaagency.in',
+  CASE
+    WHEN LEFT(path, 1) = '/' THEN path
+    ELSE CONCAT('/', path)
+  END
+);
+
+UPDATE seo_pages
+SET structured_data = JSON_SET(
+  structured_data,
+  '$.url', 'https://www.espymediaagency.in/contact'
+)
+WHERE path = '/contact';
 
 COMMIT;

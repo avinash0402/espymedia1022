@@ -48,34 +48,45 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   // Update page-level SEO meta tags
   useEffect(() => {
-    const page = pages?.find((item) => item.path === location) || pages?.find((item) => item.path === '/');
-    const title = page?.metaTitle || settings?.defaultMetaTitle || settings?.siteName || 'Espy Media';
-    const description = page?.metaDescription || settings?.defaultMetaDescription || settings?.siteDescription || '';
+    const page = pages?.find((item) => item.path === location);
+    const defaultPage = pages?.find((item) => item.path === '/');
+    const pageMetadata = page || defaultPage;
+    const title = pageMetadata?.metaTitle || settings?.defaultMetaTitle || settings?.siteName || 'Espy Media';
+    const description = pageMetadata?.metaDescription || settings?.defaultMetaDescription || settings?.siteDescription || '';
     document.title = title;
     setMeta('description', description);
-    setMeta('keywords', page?.metaKeywords || settings?.defaultMetaKeywords || '');
-    setMeta('og:title', page?.ogTitle || title, 'property');
-    setMeta('og:description', page?.ogDescription || description, 'property');
-    setMeta('og:image', page?.ogImage || settings?.defaultOgImage || '', 'property');
+    setMeta('keywords', pageMetadata?.metaKeywords || settings?.defaultMetaKeywords || '');
+    setMeta('og:title', pageMetadata?.ogTitle || title, 'property');
+    setMeta('og:description', pageMetadata?.ogDescription || description, 'property');
+    setMeta('og:image', pageMetadata?.ogImage || settings?.defaultOgImage || '', 'property');
     setMeta('twitter:card', 'summary_large_image', 'name');
-    setMeta('twitter:title', page?.twitterTitle || title, 'name');
-    setMeta('twitter:description', page?.twitterDescription || description, 'name');
-    if (page?.canonicalUrl) {
-      let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'canonical';
-        document.head.appendChild(link);
-      }
-      link.href = page.canonicalUrl;
+    setMeta('twitter:title', pageMetadata?.twitterTitle || title, 'name');
+    setMeta('twitter:description', pageMetadata?.twitterDescription || description, 'name');
+
+    const configuredCanonical = page?.canonicalUrl?.trim();
+    const homepageCanonical = defaultPage?.canonicalUrl?.trim();
+    const canonicalOrigin = homepageCanonical
+      ? new URL(homepageCanonical, window.location.origin).origin
+      : window.location.origin;
+    const canonicalPath = location === '/'
+      ? '/'
+      : `/${location.split(/[?#]/, 1)[0].split('/').filter(Boolean).join('/')}`;
+    const canonicalUrl = configuredCanonical || new URL(canonicalPath, canonicalOrigin).href;
+    let canonicalLink = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.rel = 'canonical';
+      document.head.appendChild(canonicalLink);
     }
+    canonicalLink.href = canonicalUrl;
+
     const structuredDataId = 'cms-structured-data';
     document.getElementById(structuredDataId)?.remove();
-    if (page?.structuredData && Object.keys(page.structuredData).length > 0) {
+    if (pageMetadata?.structuredData && Object.keys(pageMetadata.structuredData).length > 0) {
       const script = document.createElement('script');
       script.id = structuredDataId;
       script.type = 'application/ld+json';
-      script.textContent = JSON.stringify(page.structuredData);
+      script.textContent = JSON.stringify(pageMetadata.structuredData);
       document.head.appendChild(script);
     }
     // Update favicon dynamically
