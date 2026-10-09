@@ -12,16 +12,6 @@ interface PortfolioItem {
   image: string;
   title: string;
   category: Exclude<Category, 'All'>;
-  aspect: 'portrait' | 'square' | 'wide' | 'tall';
-}
-
-function getAspectStyle(aspect: PortfolioItem['aspect']) {
-  switch (aspect) {
-    case 'portrait': return { aspectRatio: '3 / 4' };
-    case 'square':   return { aspectRatio: '1 / 1' };
-    case 'wide':     return { aspectRatio: '16 / 9' };
-    case 'tall':     return { aspectRatio: '9 / 16' };
-  }
 }
 
 // ── Lightbox ──────────────────────────────────────────────────────────────────
@@ -248,12 +238,11 @@ export default function GraphicDesign() {
 
   const cmsItems: PortfolioItem[] = (cmsWorks || [])
     .filter((work) => work.published && work.imageUrl)
-    .map((work, index) => ({
+    .map((work) => ({
       id: work.id,
       image: work.imageUrl,
       title: work.title,
       category: cmsCategories?.find((category) => category.id === work.categoryId)?.name || 'Uncategorized',
-      aspect: (['portrait', 'square', 'wide', 'tall'] as const)[index % 4],
     }));
   const categories: Category[] = [
     'All',
@@ -375,13 +364,12 @@ export default function GraphicDesign() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.45, delay: i * 0.04 }}
                 onClick={() => openLightbox(i)}
-                className="break-inside-avoid group relative overflow-hidden rounded-3xl md:rounded-2xl cursor-pointer mb-4"
-                style={getAspectStyle(item.aspect)}
+                className="break-inside-avoid group relative mb-4 cursor-pointer overflow-hidden rounded-3xl md:rounded-2xl"
               >
                 <img
                   src={item.image}
                   alt={item.title}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                  className="block h-auto w-full transition-transform duration-700 ease-out group-hover:scale-105"
                   loading="lazy"
                 />
               </motion.div>

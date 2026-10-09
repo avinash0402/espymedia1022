@@ -42,15 +42,19 @@ export function GraphicDesignSection() {
           Graphic portfolio could not be loaded: {error.message}
         </div>
       ) : homepageWorks.length > 0 ? (
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 xl:columns-4">
-            {homepageWorks.map((work) => (
-              <figure key={work.id} className="mb-4 break-inside-avoid overflow-hidden rounded-2xl">
+        <div className="relative z-10 overflow-hidden">
+          <div className="graphic-marquee flex w-max gap-5 px-2 sm:gap-7 sm:px-4">
+            {[...homepageWorks, ...homepageWorks].map((work, index) => (
+              <figure
+                key={`${work.id}-${index}`}
+                aria-hidden={index >= homepageWorks.length}
+                className="w-[min(72vw,15rem)] shrink-0 overflow-hidden rounded-2xl sm:w-60"
+              >
                 <img
                   src={work.imageUrl}
-                  alt={work.altText || work.title}
-                  className="block h-auto w-full"
-                  loading="lazy"
+                  alt={index >= homepageWorks.length ? '' : work.altText || work.title}
+                  className="block aspect-[7/9] h-auto w-full object-cover"
+                  loading={index < 2 ? 'eager' : 'lazy'}
                   decoding="async"
                 />
               </figure>
