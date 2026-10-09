@@ -113,16 +113,7 @@ function Router() {
     <ScrollToTop />
     <SeoHead />
     <MotionEnhancementLayer location={location} disabled={isAdmin} />
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#050505] text-zinc-400" role="status">
-          <span className="flex items-center gap-3 text-sm">
-            <span className="h-5 w-5 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" aria-hidden="true" />
-            Loading page…
-          </span>
-        </div>
-      }
-    >
+    <Suspense fallback={null}>
       {isAdmin || prefersReducedMotion !== false ? routes : (
         <motion.div
           key={location}

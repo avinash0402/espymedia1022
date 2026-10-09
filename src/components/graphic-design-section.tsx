@@ -49,6 +49,16 @@ export function GraphicDesignSection() {
                 key={`${work.id}-${index}`}
                 aria-hidden={index >= homepageWorks.length}
                 className="w-[min(72vw,15rem)] shrink-0 overflow-hidden rounded-2xl sm:w-60"
+                style={(() => {
+                  const position = homepageWorks.length > 1
+                    ? ((index % homepageWorks.length) / (homepageWorks.length - 1)) * 2 - 1
+                    : 0;
+                  const curve = position * position;
+                  const verticalOffset = `clamp(0px, ${(curve * 4.5).toFixed(2)}vw, ${(curve * 68).toFixed(1)}px)`;
+                  return {
+                    transform: `translateY(${verticalOffset}) rotate(${(position * 9).toFixed(1)}deg)`,
+                  };
+                })()}
               >
                 <img
                   src={work.imageUrl}
