@@ -42,32 +42,37 @@ export function GraphicDesignSection() {
           Graphic portfolio could not be loaded: {error.message}
         </div>
       ) : homepageWorks.length > 0 ? (
-        <div className="relative z-10 overflow-hidden">
-          <div className="graphic-marquee flex w-max gap-5 px-2 sm:gap-7 sm:px-4">
-            {[...homepageWorks, ...homepageWorks].map((work, index) => (
-              <figure
-                key={`${work.id}-${index}`}
-                aria-hidden={index >= homepageWorks.length}
-                className="w-[min(72vw,15rem)] shrink-0 overflow-hidden rounded-2xl sm:w-60"
-                style={(() => {
-                  const position = homepageWorks.length > 1
-                    ? ((index % homepageWorks.length) / (homepageWorks.length - 1)) * 2 - 1
-                    : 0;
-                  const curve = position * position;
-                  const verticalOffset = `clamp(0px, ${(curve * 4.5).toFixed(2)}vw, ${(curve * 68).toFixed(1)}px)`;
-                  return {
-                    transform: `translateY(${verticalOffset}) rotate(${(position * 9).toFixed(1)}deg)`,
-                  };
-                })()}
+        <div className="relative z-10 overflow-hidden pb-[clamp(64px,9vw,150px)]">
+          <div className="graphic-marquee flex w-max">
+            {[0, 1].map((copy) => (
+              <div
+                key={copy}
+                className="graphic-marquee-group flex shrink-0 gap-4 pr-4 sm:gap-6 sm:pr-6"
+                aria-hidden={copy === 1}
               >
-                <img
-                  src={work.imageUrl}
-                  alt={index >= homepageWorks.length ? '' : work.altText || work.title}
-                  className="block aspect-[7/9] h-auto w-full object-cover"
-                  loading={index < 2 ? 'eager' : 'lazy'}
-                  decoding="async"
-                />
-              </figure>
+                {homepageWorks.map((work, index) => {
+                  const phase = (index / homepageWorks.length) * Math.PI * 2;
+                  const arch = (1 + Math.cos(phase)) / 2;
+                  const tilt = -Math.sin(phase) * 10;
+                  const verticalOffset = `clamp(${(arch * 64).toFixed(1)}px, ${(arch * 10).toFixed(2)}vw, ${(arch * 150).toFixed(1)}px)`;
+
+                  return (
+                    <figure
+                      key={`${copy}-${work.id}`}
+                      className="w-[min(58vw,13rem)] shrink-0 overflow-hidden rounded-2xl sm:w-56"
+                      style={{ transform: `translateY(${verticalOffset}) rotate(${tilt.toFixed(1)}deg)` }}
+                    >
+                      <img
+                        src={work.imageUrl}
+                        alt={copy === 1 ? '' : work.altText || work.title}
+                        className="block aspect-[7/9] h-auto w-full object-cover"
+                        loading={copy === 0 && index < 2 ? 'eager' : 'lazy'}
+                        decoding="async"
+                      />
+                    </figure>
+                  );
+                })}
+              </div>
             ))}
           </div>
         </div>
