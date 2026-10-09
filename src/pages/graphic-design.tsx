@@ -24,28 +24,16 @@ function getAspectStyle(aspect: PortfolioItem['aspect']) {
   }
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Branding: 'rgba(124,58,237,0.85)',
-  Social:   'rgba(99,102,241,0.85)',
-  Print:    'rgba(168,85,247,0.85)',
-  UI:       'rgba(139,92,246,0.85)',
-};
-
-function categoryColor(category: string) {
-  return CATEGORY_COLORS[category] || 'rgba(124,58,237,0.85)';
-}
-
 // ── Lightbox ──────────────────────────────────────────────────────────────────
 
 interface LightboxProps {
   items: PortfolioItem[];
   index: number;
-  showCategory: boolean;
   onClose: () => void;
   onNavigate: (index: number) => void;
 }
 
-function Lightbox({ items, index, showCategory, onClose, onNavigate }: LightboxProps) {
+function Lightbox({ items, index, onClose, onNavigate }: LightboxProps) {
   const [direction, setDirection] = useState(0); // -1 = prev, 1 = next
   const touchStartX = useRef<number | null>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
@@ -125,14 +113,8 @@ function Lightbox({ items, index, showCategory, onClose, onNavigate }: LightboxP
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between px-5 py-4 shrink-0"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-        {/* Category + title */}
+        {/* Title */}
         <div className="flex items-center gap-3 min-w-0">
-          {showCategory && <span
-            className="shrink-0 inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white/90 tracking-wider uppercase"
-            style={{ background: CATEGORY_COLORS[item.category] }}
-          >
-            {item.category}
-          </span>}
           <span className="text-sm font-medium text-white/80 truncate">{item.title}</span>
         </div>
 
@@ -195,13 +177,7 @@ function Lightbox({ items, index, showCategory, onClose, onNavigate }: LightboxP
                 style={{
                   maxHeight: 'calc(100vh - 220px)',
                   maxWidth: '100%',
-                  boxShadow: '0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06)',
                 }}
-              />
-              {/* Subtle purple rim on image */}
-              <div
-                className="absolute inset-0 rounded-xl pointer-events-none"
-                style={{ boxShadow: 'inset 0 0 0 1px rgba(167,139,250,0.12)' }}
               />
             </div>
           </motion.div>
@@ -408,40 +384,6 @@ export default function GraphicDesign() {
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                   loading="lazy"
                 />
-
-                {/* Gradient */}
-                <div
-                  className="absolute inset-0 transition-opacity duration-300"
-                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.08) 50%, transparent 100%)' }}
-                />
-                {/* Hover tint */}
-                <div
-                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{ background: 'rgba(124,58,237,0.12)' }}
-                />
-                {/* Hover ring */}
-                <div className="absolute inset-0 rounded-2xl ring-0 group-hover:ring-1 ring-[#a78bfa]/30 transition-all duration-300" />
-
-                {/* Category chip */}
-                {active === 'All' && <div className="absolute top-3 left-3">
-                  <span
-                    className="inline-block rounded-full px-2.5 py-1 text-[10px] font-semibold text-white/90 backdrop-blur-sm tracking-wider uppercase"
-                       style={{ background: categoryColor(item.category) }}
-                  >
-                    {item.category}
-                  </span>
-                </div>}
-
-                {/* Expand icon on hover */}
-                <div
-                  className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100"
-                  style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}
-                >
-                  <svg className="h-3.5 w-3.5 text-white/80" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M15 3h6m0 0v6m0-6l-7 7M9 21H3m0 0v-6m0 6l7-7" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-
               </motion.div>
             ))}
           </motion.div>
@@ -499,7 +441,6 @@ export default function GraphicDesign() {
           <Lightbox
             items={filtered}
             index={lightboxIndex}
-            showCategory={active === 'All'}
             onClose={closeLightbox}
             onNavigate={setLightboxIndex}
           />
