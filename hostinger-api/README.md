@@ -39,15 +39,15 @@ editor. New installations can use the FAQ table definition in `schema.sql`.
 ## Portfolio featured limits and image access
 
 The admin and API limit homepage selections to 3 featured website projects and
-10 featured graphic works. For an existing database with more featured rows
-than those limits, run `hostinger_featured_portfolio_limits.sql` once in
-phpMyAdmin. It retains the lowest display-order rows (then lowest IDs) and
-unfeatures the extras without deleting projects or images.
+10 featured graphic works. Deploy the current `index.php` to Hostinger for the
+API to accept the 10-work limit; updating the frontend alone does not change
+the API's limit. For an existing database with more featured rows than those
+limits, run `hostinger_featured_portfolio_limits.sql` once in phpMyAdmin. It
+retains the lowest display-order rows (then lowest IDs) and unfeatures the
+extras without deleting projects or images.
 
 Upload the current `.htaccess` with the API files so cross-origin requests for
-public uploaded images include the CORS header required by the homepage's
-WebGL graphic gallery. The HTML portfolio pages also load images without
-requesting cross-origin access.
+public uploaded images include the CORS header required by the homepage gallery.
 
 ## Deploy the API
 

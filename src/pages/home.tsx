@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import {
   ArrowUpRight, ArrowRight, Briefcase,
@@ -16,6 +16,7 @@ import { ShinyCta } from '@/components/shiny-cta';
 import { HeroRichText } from '@/components/hero-rich-text';
 import { normalizeHeroHeadline } from '@/components/rich-text-highlight-editor';
 import { getProjectPlatformBadge } from '@/lib/project-platform';
+import { GraphicDesignSection } from '@/components/graphic-design-section';
 import {
   useGetServices,
   useGetPlatforms,
@@ -23,40 +24,6 @@ import {
   useGetSettings,
   useGetFeaturedProjects,
 } from '@workspace/api-client-react';
-
-const GraphicDesignSection = lazy(() =>
-  import('@/components/graphic-design-section').then(({ GraphicDesignSection: section }) => ({ default: section })),
-);
-
-function DeferredGraphicDesignSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [shouldLoad, setShouldLoad] = useState(false);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    if (!('IntersectionObserver' in window)) {
-      setShouldLoad(true);
-      return;
-    }
-
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setShouldLoad(true);
-        observer.disconnect();
-      }
-    }, { rootMargin: '600px 0px' });
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
-
-  const placeholder = <div aria-hidden="true" className="min-h-[720px] bg-black md:min-h-[920px]" />;
-  return (
-    <div ref={containerRef}>
-      {shouldLoad ? <Suspense fallback={placeholder}><GraphicDesignSection /></Suspense> : placeholder}
-    </div>
-  );
-}
 
 // ── Static fallback data ─────────────────────────────────────────────────────
 
@@ -692,7 +659,7 @@ export default function Home() {
         </section>
 
         {/* ── GRAPHIC DESIGN WORK ───────────────────────────────────── */}
-        <DeferredGraphicDesignSection />
+        <GraphicDesignSection />
 
         {/* ── WEB DESIGN — CAPABILITY CARDS ────────────────────────── */}
         <section className="py-14 md:py-32 border-t border-white/[0.05]">

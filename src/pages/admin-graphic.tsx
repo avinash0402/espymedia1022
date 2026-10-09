@@ -193,13 +193,19 @@ export default function AdminGraphic() {
     await refreshWorks();
     setIsApplying(false);
     const updated = results.filter((result) => result.status === 'fulfilled').length;
-    const failed = results.length - updated;
+    const failures = results.flatMap((result) =>
+      result.status === 'rejected'
+        ? [result.reason instanceof Error ? result.reason.message : 'The server rejected an update']
+        : [],
+    );
+    const failed = failures.length;
     toast({
       title: failed
         ? `${updated} updated, ${failed} failed`
         : featured
           ? `${updated} image${updated === 1 ? '' : 's'} featured on the homepage`
           : `${updated} image${updated === 1 ? '' : 's'} removed from homepage features`,
+      ...(failed ? { description: failures.slice(0, 3).join('; ') } : {}),
       ...(failed ? { variant: 'destructive' as const } : {}),
     });
     if (!failed) setSelectedIds(new Set());
