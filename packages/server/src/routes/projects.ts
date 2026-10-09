@@ -42,7 +42,7 @@ router.get('/', async (_req, res) => {
 router.get('/featured', async (_req, res) => {
   try {
     const r = await pool.query(
-      'SELECT * FROM projects WHERE featured = true AND published = true ORDER BY sort_order ASC LIMIT 6'
+      'SELECT * FROM projects WHERE featured = true AND published = true ORDER BY sort_order ASC LIMIT 3'
     );
     res.json(r.rows.map(toProject));
   } catch (err) {
@@ -102,7 +102,7 @@ router.post('/', requireAuth, async (req, res) => {
     const { title, slug, category, categoryId, clientName, challenge, approach, result, metrics, published, featured, imageUrl, galleryUrls, techStack, liveUrl, altText, sortOrder } = req.body;
     if (featured) {
       const featuredCount = await pool.query('SELECT COUNT(*)::int AS count FROM projects WHERE featured = true');
-      if (featuredCount.rows[0].count >= 6) return res.status(409).json({ error: 'A maximum of 6 featured projects is allowed' });
+      if (featuredCount.rows[0].count >= 3) return res.status(409).json({ error: 'A maximum of 3 featured projects is allowed' });
     }
     const r = await pool.query(
       `INSERT INTO projects (title, slug, category, category_id, client_name, challenge, approach, result, metrics, published, featured, image_url, gallery_urls, tech_stack, live_url, alt_text, sort_order)
@@ -123,7 +123,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
     const { title, slug, category, categoryId, clientName, challenge, approach, result, metrics, published, featured, imageUrl, galleryUrls, techStack, liveUrl, altText, sortOrder } = req.body;
     if (featured) {
       const featuredCount = await pool.query('SELECT COUNT(*)::int AS count FROM projects WHERE featured = true AND id <> $1', [req.params.id]);
-      if (featuredCount.rows[0].count >= 6) return res.status(409).json({ error: 'A maximum of 6 featured projects is allowed' });
+      if (featuredCount.rows[0].count >= 3) return res.status(409).json({ error: 'A maximum of 3 featured projects is allowed' });
     }
     const r = await pool.query(
       `UPDATE projects SET

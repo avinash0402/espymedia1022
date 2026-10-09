@@ -9,7 +9,7 @@ export function GraphicDesignSection() {
   const { data: cmsWorks, isLoading, error } = useGetGraphicWorks();
   const publishedWorks = cmsWorks?.filter((work) => work.published && work.imageUrl) || [];
   const featuredWorks = publishedWorks.filter((work) => work.featured);
-  const homepageWorks = (featuredWorks.length > 0 ? featuredWorks : publishedWorks).slice(0, 6);
+  const homepageWorks = (featuredWorks.length > 0 ? featuredWorks : publishedWorks).slice(0, 10);
   const galleryItems = homepageWorks.map((work) => ({
     image: work.imageUrl,
     text: '',

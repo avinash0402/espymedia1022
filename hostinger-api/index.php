@@ -620,7 +620,7 @@ try {
         respond(decodeRows(queryRows('SELECT * FROM projects ORDER BY sort_order ASC, created_at DESC'), $projectMap, ['galleryUrls', 'techStack'], ['published', 'featured']));
     }
     if ($path === '/projects/featured' && $method === 'GET') {
-        respond(decodeRows(queryRows('SELECT * FROM projects WHERE featured = 1 AND published = 1 ORDER BY sort_order ASC LIMIT 6'), $projectMap, ['galleryUrls', 'techStack'], ['published', 'featured']));
+        respond(decodeRows(queryRows('SELECT * FROM projects WHERE featured = 1 AND published = 1 ORDER BY sort_order ASC, id ASC LIMIT 3'), $projectMap, ['galleryUrls', 'techStack'], ['published', 'featured']));
     }
     if ($path === '/projects/categories' && $method === 'GET') {
         respond(queryRows('SELECT id, name, slug FROM project_categories ORDER BY name'));
@@ -661,8 +661,8 @@ try {
         if ($method === 'PATCH') {
             if (!empty($body['featured'])) {
                 $featuredCount = queryOne('SELECT COUNT(*) AS count FROM projects WHERE featured = 1 AND id <> ?', [$id]);
-                if ((int)($featuredCount['count'] ?? 0) >= 6) {
-                    fail('A maximum of 6 featured projects is allowed', 409);
+                if ((int)($featuredCount['count'] ?? 0) >= 3) {
+                    fail('A maximum of 3 featured website projects is allowed', 409);
                 }
             }
             $fields = array_diff_key($projectMap, array_flip(['id', 'createdAt', 'updatedAt']));
@@ -677,8 +677,8 @@ try {
         requireAuth();
         if (!empty($body['featured'])) {
             $featuredCount = queryOne('SELECT COUNT(*) AS count FROM projects WHERE featured = 1');
-            if ((int)($featuredCount['count'] ?? 0) >= 6) {
-                fail('A maximum of 6 featured projects is allowed', 409);
+            if ((int)($featuredCount['count'] ?? 0) >= 3) {
+                fail('A maximum of 3 featured website projects is allowed', 409);
             }
         }
         $fields = array_diff_key($projectMap, array_flip(['id', 'createdAt', 'updatedAt']));
@@ -887,8 +887,8 @@ try {
                 }
                 if ($resource === 'graphic-works' && !empty($body['featured'])) {
                     $count = queryOne('SELECT COUNT(*) AS count FROM graphic_works WHERE featured = 1');
-                    if ((int)($count['count'] ?? 0) >= 6) {
-                        fail('A maximum of 6 featured graphic works is allowed', 409);
+                    if ((int)($count['count'] ?? 0) >= 10) {
+                        fail('A maximum of 10 featured graphic works is allowed', 409);
                     }
                 }
                 $defaults = match ($resource) {
@@ -919,8 +919,8 @@ try {
                     }
                     if ($resource === 'graphic-works' && !empty($body['featured'])) {
                         $count = queryOne('SELECT COUNT(*) AS count FROM graphic_works WHERE featured = 1 AND id <> ?', [$numericId]);
-                        if ((int)($count['count'] ?? 0) >= 6) {
-                            fail('A maximum of 6 featured graphic works is allowed', 409);
+                        if ((int)($count['count'] ?? 0) >= 10) {
+                            fail('A maximum of 10 featured graphic works is allowed', 409);
                         }
                     }
                     $row = updateMapped($table, $numericId, 'id', $body, $config['fields'], $config['json']);

@@ -15,6 +15,7 @@ import { Footer } from '@/components/footer';
 import { ShinyCta } from '@/components/shiny-cta';
 import { HeroRichText } from '@/components/hero-rich-text';
 import { normalizeHeroHeadline } from '@/components/rich-text-highlight-editor';
+import { getProjectPlatformBadge } from '@/lib/project-platform';
 import {
   useGetServices,
   useGetPlatforms,
@@ -574,8 +575,8 @@ export default function Home() {
               ];
               const ACCENTS = ['#8B5CF6', '#F59E0B', '#F43F5E', '#38BDF8', '#34D399', '#FB923C'];
               const displayProjects = (featuredProjects && featuredProjects.length > 0)
-                ? featuredProjects
-                : FEATURED_WEB_PROJECTS.map((p, i) => ({
+                ? featuredProjects.slice(0, 3)
+                : FEATURED_WEB_PROJECTS.slice(0, 3).map((p, i) => ({
                     id: p.id, title: p.title, category: p.category,
                     imageUrl: undefined, liveUrl: p.url,
                     challenge: p.description, techStack: p.tags, slug: String(p.id),
@@ -638,9 +639,12 @@ export default function Home() {
                             <span className="text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] text-violet-400">
                               {project.category}
                             </span>
-                            <div className="flex gap-1">
-                              {tags.slice(0, 2).map((tag: string) => (
-                                <span key={tag} className="text-[10px] text-zinc-600 bg-white/[0.03] border border-white/[0.05] rounded px-1.5 py-0.5">
+                            <div className="flex flex-wrap justify-end gap-1">
+                              <span className="text-[10px] text-violet-200 bg-violet-500/10 border border-violet-400/20 rounded-full px-2 py-1">
+                                {getProjectPlatformBadge(tags)}
+                              </span>
+                              {tags.filter((tag: string) => !/shopify/i.test(tag)).slice(0, 1).map((tag: string) => (
+                                <span key={tag} className="text-[10px] text-zinc-400 bg-white/[0.03] border border-white/[0.05] rounded px-1.5 py-0.5">
                                   {tag}
                                 </span>
                               ))}

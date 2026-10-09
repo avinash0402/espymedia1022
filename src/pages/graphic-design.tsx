@@ -40,11 +40,12 @@ function categoryColor(category: string) {
 interface LightboxProps {
   items: PortfolioItem[];
   index: number;
+  showCategory: boolean;
   onClose: () => void;
   onNavigate: (index: number) => void;
 }
 
-function Lightbox({ items, index, onClose, onNavigate }: LightboxProps) {
+function Lightbox({ items, index, showCategory, onClose, onNavigate }: LightboxProps) {
   const [direction, setDirection] = useState(0); // -1 = prev, 1 = next
   const touchStartX = useRef<number | null>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
@@ -126,12 +127,12 @@ function Lightbox({ items, index, onClose, onNavigate }: LightboxProps) {
         style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         {/* Category + title */}
         <div className="flex items-center gap-3 min-w-0">
-          <span
+          {showCategory && <span
             className="shrink-0 inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold text-white/90 tracking-wider uppercase"
             style={{ background: CATEGORY_COLORS[item.category] }}
           >
             {item.category}
-          </span>
+          </span>}
           <span className="text-sm font-medium text-white/80 truncate">{item.title}</span>
         </div>
 
@@ -196,7 +197,6 @@ function Lightbox({ items, index, onClose, onNavigate }: LightboxProps) {
                   maxWidth: '100%',
                   boxShadow: '0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06)',
                 }}
-                crossOrigin="anonymous"
               />
               {/* Subtle purple rim on image */}
               <div
@@ -252,7 +252,6 @@ function Lightbox({ items, index, onClose, onNavigate }: LightboxProps) {
                 src={thumb.image}
                 alt={thumb.title}
                 className="w-full h-full object-cover"
-                crossOrigin="anonymous"
                 loading="lazy"
               />
             </button>
@@ -407,7 +406,6 @@ export default function GraphicDesign() {
                   src={item.image}
                   alt={item.title}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  crossOrigin="anonymous"
                   loading="lazy"
                 />
 
@@ -425,14 +423,14 @@ export default function GraphicDesign() {
                 <div className="absolute inset-0 rounded-2xl ring-0 group-hover:ring-1 ring-[#a78bfa]/30 transition-all duration-300" />
 
                 {/* Category chip */}
-                <div className="absolute top-3 left-3">
+                {active === 'All' && <div className="absolute top-3 left-3">
                   <span
                     className="inline-block rounded-full px-2.5 py-1 text-[10px] font-semibold text-white/90 backdrop-blur-sm tracking-wider uppercase"
                        style={{ background: categoryColor(item.category) }}
                   >
                     {item.category}
                   </span>
-                </div>
+                </div>}
 
                 {/* Expand icon on hover */}
                 <div
@@ -501,6 +499,7 @@ export default function GraphicDesign() {
           <Lightbox
             items={filtered}
             index={lightboxIndex}
+            showCategory={active === 'All'}
             onClose={closeLightbox}
             onNavigate={setLightboxIndex}
           />

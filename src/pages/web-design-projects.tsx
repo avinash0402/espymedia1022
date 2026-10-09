@@ -5,6 +5,7 @@ import { NavBar } from '@/components/nav-bar';
 import { Footer } from '@/components/footer';
 import { Link } from 'wouter';
 import { useGetProjects, type Project } from '@workspace/api-client-react';
+import { getProjectPlatformBadge } from '@/lib/project-platform';
 
 const PROJECT_STYLES = [
   { gradient: 'from-violet-950 via-purple-950 to-indigo-950', accentColor: '#8B5CF6', accentText: 'text-violet-400' },
@@ -210,8 +211,11 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <span className={`text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.08] ${style.accentText}`}>
             {project.category}
           </span>
-          <div className="flex gap-1">
-            {tags.map((tag) => (
+          <div className="flex flex-wrap justify-end gap-1">
+            <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2 py-1 text-[10px] text-violet-200">
+              {getProjectPlatformBadge(tags)}
+            </span>
+            {tags.filter((tag) => !/shopify/i.test(tag)).slice(0, 2).map((tag) => (
               <span key={tag} className="text-[10px] text-zinc-600 bg-white/[0.03] border border-white/[0.05] rounded px-1.5 py-0.5">
                 {tag}
               </span>

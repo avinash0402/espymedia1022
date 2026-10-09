@@ -42,7 +42,7 @@ import {
 const slugify = (value: string) =>
   value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-const MAX_FEATURED_GRAPHIC_WORKS = 6;
+const MAX_FEATURED_GRAPHIC_WORKS = 10;
 
 async function settleInBatches<T>(
   items: T[],
@@ -227,7 +227,7 @@ export default function AdminGraphic() {
         <header>
           <p className="mb-2 text-xs uppercase tracking-[0.2em] text-primary">Portfolio CMS</p>
           <h1 className="mb-1 text-2xl font-bold sm:text-3xl">Graphic Portfolio</h1>
-          <p className="text-sm text-muted-foreground">Upload images, select them, then assign categories, choose up to 6 homepage features, or delete them. Featured images are selected independently of category.</p>
+          <p className="text-sm text-muted-foreground">Upload images, select them, then assign categories, choose up to 10 homepage features, or delete them. Featured images are selected independently of category.</p>
         </header>
 
         <Card className="border-glow">
@@ -303,7 +303,7 @@ export default function AdminGraphic() {
                 Select images using the corner checkboxes. Homepage features: {featuredCount}/{MAX_FEATURED_GRAPHIC_WORKS}.
               </p>
               <p className="text-xs text-muted-foreground">
-                Until you feature an image, the homepage keeps showing its first 6 published images. After you choose features, it shows only those images.
+                Until you feature an image, the homepage keeps showing its first 10 published images. After you choose features, it shows only those images.
               </p>
             </div>
             {works.length > 0 && (

@@ -75,6 +75,7 @@ const blankForm = {
   sortOrder: 0,
 };
 
+const MAX_FEATURED_WEB_PROJECTS = 3;
 
 export default function AdminProjects() {
   const { data: projects, isLoading } = useGetProjects();
@@ -89,6 +90,8 @@ export default function AdminProjects() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState(blankForm);
+  const featuredCount = projects?.filter((project) => project.featured).length ?? 0;
+  const canFeatureProject = formData.featured || Boolean(editingProject?.featured) || featuredCount < MAX_FEATURED_WEB_PROJECTS;
 
   const handleEdit = (project: Project) => {
     setEditingProject(project);
@@ -114,6 +117,14 @@ export default function AdminProjects() {
       toast({ title: 'Title and slug are required', variant: 'destructive' });
       return;
     }
+    if (formData.featured && !editingProject?.featured && featuredCount >= MAX_FEATURED_WEB_PROJECTS) {
+      toast({
+        title: `Only ${MAX_FEATURED_WEB_PROJECTS} website projects can be featured`,
+        description: 'Unfeature an existing project before adding another to the homepage.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     const payload = {
       ...formData,
@@ -132,7 +143,10 @@ export default function AdminProjects() {
             resetForm();
             toast({ title: 'Project updated successfully' });
           },
-          onError: () => toast({ title: 'Failed to update project', variant: 'destructive' }),
+          onError: (error) => toast({
+            title: error instanceof Error ? error.message : 'Failed to update project',
+            variant: 'destructive',
+          }),
         }
       );
     } else {
@@ -146,7 +160,10 @@ export default function AdminProjects() {
             resetForm();
             toast({ title: 'Project created successfully' });
           },
-          onError: () => toast({ title: 'Failed to create project', variant: 'destructive' }),
+          onError: (error) => toast({
+            title: error instanceof Error ? error.message : 'Failed to create project',
+            variant: 'destructive',
+          }),
         }
       );
     }
@@ -185,7 +202,9 @@ export default function AdminProjects() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2">Web Projects</h1>
-            <p className="text-muted-foreground text-sm">Manage web design portfolio projects shown on the homepage and project pages</p>
+            <p className="text-muted-foreground text-sm">
+              Manage web design portfolio projects. Homepage features: {featuredCount}/{MAX_FEATURED_WEB_PROJECTS}.
+            </p>
           </div>
 
           <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) handleDialogClose(); else setDialogOpen(open); }}>
@@ -344,12 +363,18 @@ export default function AdminProjects() {
                     <Switch
                       id="featured"
                       checked={formData.featured}
+                      disabled={!canFeatureProject}
                       onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
                       data-testid="switch-project-featured"
                     />
-                    <Label htmlFor="featured">Featured on homepage</Label>
+                    <Label htmlFor="featured">Featured on homepage ({featuredCount}/{MAX_FEATURED_WEB_PROJECTS})</Label>
                   </div>
                 </div>
+                {!canFeatureProject && (
+                  <p className="text-xs text-muted-foreground">
+                    Unfeature an existing project before featuring another.
+                  </p>
+                )}
 
                 <Button
                   onClick={handleSubmit}
