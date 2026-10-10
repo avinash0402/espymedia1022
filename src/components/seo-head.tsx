@@ -48,20 +48,38 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   // Update page-level SEO meta tags
   useEffect(() => {
-    const page = pages?.find((item) => item.path === location);
+    const normalizedLocation = normalizePath(location);
+    const page = pages?.find((item) => normalizePath(item.path) === normalizedLocation);
     const defaultPage = pages?.find((item) => item.path === '/');
     const pageMetadata = page || defaultPage;
     const title = pageMetadata?.metaTitle || settings?.defaultMetaTitle || settings?.siteName || 'Espy Media';
     const description = pageMetadata?.metaDescription || settings?.defaultMetaDescription || settings?.siteDescription || '';
+    const rawOgImage = pageMetadata?.ogImage || settings?.defaultOgImage || '';
+    let ogImage = '';
+    if (rawOgImage) {
+      try {
+        const uploadPath = /^\/?uploads\//i.test(rawOgImage);
+        const apiOrigin = import.meta.env.VITE_API_BASE_URL
+          ? new URL(import.meta.env.VITE_API_BASE_URL).origin
+          : window.location.origin;
+        const imageUrl = new URL(rawOgImage, uploadPath ? apiOrigin : window.location.origin);
+        if (imageUrl.protocol === 'http:' || imageUrl.protocol === 'https:') ogImage = imageUrl.href;
+      } catch {
+        ogImage = '';
+      }
+    }
     document.title = title;
     setMeta('description', description);
     setMeta('keywords', pageMetadata?.metaKeywords || settings?.defaultMetaKeywords || '');
     setMeta('og:title', pageMetadata?.ogTitle || title, 'property');
     setMeta('og:description', pageMetadata?.ogDescription || description, 'property');
-    setMeta('og:image', pageMetadata?.ogImage || settings?.defaultOgImage || '', 'property');
+    setMeta('og:image', ogImage, 'property');
+    setMeta('og:image:alt', pageMetadata?.ogTitle || title, 'property');
     setMeta('twitter:card', 'summary_large_image', 'name');
     setMeta('twitter:title', pageMetadata?.twitterTitle || title, 'name');
     setMeta('twitter:description', pageMetadata?.twitterDescription || description, 'name');
+    setMeta('twitter:image', ogImage, 'name');
+    setMeta('robots', pageMetadata?.noindex ? 'noindex, nofollow' : 'index, follow');
 
     const configuredCanonical = page?.canonicalUrl?.trim();
     const homepageCanonical = defaultPage?.canonicalUrl?.trim();
@@ -72,6 +90,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       ? '/'
       : `/${location.split(/[?#]/, 1)[0].split('/').filter(Boolean).join('/')}`;
     const canonicalUrl = configuredCanonical || new URL(canonicalPath, canonicalOrigin).href;
+    setMeta('og:url', canonicalUrl, 'property');
     let canonicalLink = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!canonicalLink) {
       canonicalLink = document.createElement('link');
@@ -105,7 +124,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 }
 
 function setMeta(name: string, content: string, attribute = 'name') {
-  if (!content) return;
   let meta = document.querySelector<HTMLMetaElement>(`meta[${attribute}="${name}"]`);
   if (!meta) {
     meta = document.createElement('meta');
@@ -113,4 +131,9 @@ function setMeta(name: string, content: string, attribute = 'name') {
     document.head.appendChild(meta);
   }
   meta.content = content;
+}
+
+function normalizePath(path: string) {
+  const pathname = `/${path.split(/[?#]/, 1)[0].split('/').filter(Boolean).join('/')}`;
+  return pathname === '/' ? pathname : pathname.replace(/\/+$/, '');
 }

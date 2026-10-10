@@ -12,7 +12,13 @@ interface ImageUploadProps {
   accept?: string;
 }
 
-export function ImageUpload({ value, onChange, label, className, accept = 'image/*' }: ImageUploadProps) {
+export function ImageUpload({
+  value,
+  onChange,
+  label,
+  className,
+  accept = '.jpg,.jpeg,.png,.gif,.webp,.svg,.ico,.avif,image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/x-icon,image/avif',
+}: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -25,7 +31,7 @@ export function ImageUpload({ value, onChange, label, className, accept = 'image
     } catch {
       toast({
         title: 'Upload failed',
-        description: 'File type not supported or server error. Please try a PNG, SVG, or ICO file.',
+        description: 'File type not supported or server error. Please try a JPG, PNG, WebP, GIF, SVG, ICO, or AVIF file.',
         variant: 'destructive',
       });
     } finally {

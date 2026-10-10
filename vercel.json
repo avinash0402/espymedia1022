@@ -3,6 +3,17 @@
   "outputDirectory": "dist/public",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "rewrites": [
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i)(facebookexternalhit|facebot|twitterbot|linkedinbot|whatsapp|slackbot|telegrambot|discordbot|google-inspectiontool|googlebot|bingbot)"
+        }
+      ],
+      "destination": "/api/share?path=/$1"
+    },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
