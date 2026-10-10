@@ -67,6 +67,7 @@ export default function AdminGraphic() {
   const [newCategory, setNewCategory] = useState('');
   const [uploadCategoryId, setUploadCategoryId] = useState('');
   const [bulkCategoryId, setBulkCategoryId] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [isApplying, setIsApplying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -75,6 +76,13 @@ export default function AdminGraphic() {
   const selectedFeaturedCount = selectedWorks.filter((work) => work.featured).length;
   const selectedUnfeaturedCount = selectedWorks.length - selectedFeaturedCount;
   const remainingFeaturedSlots = Math.max(0, MAX_FEATURED_GRAPHIC_WORKS - featuredCount);
+  const visibleWorks = works.filter((work) => {
+    if (activeFilter === 'featured') return work.featured;
+    if (activeFilter === 'uncategorized') return !work.categoryId;
+    if (activeFilter !== 'all') return work.categoryId === Number(activeFilter);
+    return true;
+  });
+  const visibleSelectedCount = visibleWorks.filter((work) => selectedIds.has(work.id)).length;
 
   const refreshWorks = () => queryClient.invalidateQueries({ queryKey: ['cms', 'graphic-works'] });
   const refreshCategories = () => queryClient.invalidateQueries({ queryKey: ['cms', 'graphic-categories'] });
@@ -144,9 +152,15 @@ export default function AdminGraphic() {
   };
 
   const toggleAll = () => {
-    setSelectedIds((current) =>
-      current.size === works.length ? new Set() : new Set(works.map((work) => work.id)),
-    );
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (visibleSelectedCount === visibleWorks.length) {
+        visibleWorks.forEach((work) => next.delete(work.id));
+      } else {
+        visibleWorks.forEach((work) => next.add(work.id));
+      }
+      return next;
+    });
   };
 
   const assignCategory = async () => {
@@ -304,7 +318,7 @@ export default function AdminGraphic() {
         <section aria-label="Graphic portfolio images" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="font-semibold">Images <span className="text-muted-foreground">({works.length})</span></h2>
+              <h2 className="font-semibold">Images <span className="text-muted-foreground">({visibleWorks.length}{activeFilter === 'all' ? '' : ` of ${works.length}`})</span></h2>
               <p className="text-xs text-muted-foreground">
                 Select images using the corner checkboxes. Homepage features: {featuredCount}/{MAX_FEATURED_GRAPHIC_WORKS}.
               </p>
@@ -312,15 +326,44 @@ export default function AdminGraphic() {
                 Until you feature an image, the homepage keeps showing its first 10 published images. After you choose features, it shows only those images.
               </p>
             </div>
-            {works.length > 0 && (
+            {visibleWorks.length > 0 && (
               <Button type="button" variant="outline" size="sm" onClick={toggleAll}>
-                {selectedIds.size === works.length
+                {visibleSelectedCount === visibleWorks.length
                   ? <CheckSquare className="mr-2 h-4 w-4" />
                   : <Square className="mr-2 h-4 w-4" />}
-                {selectedIds.size === works.length ? 'Deselect all' : 'Select all'}
+                {visibleSelectedCount === visibleWorks.length ? 'Deselect visible' : 'Select visible'}
               </Button>
             )}
           </div>
+
+          {!isLoading && !error && works.length > 0 && (
+            <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Filter portfolio images by category">
+              {[
+                { id: 'all', label: 'All', count: works.length },
+                { id: 'featured', label: 'Featured', count: featuredCount },
+                { id: 'uncategorized', label: 'Uncategorized', count: works.filter((work) => !work.categoryId).length },
+                ...categories.map((category) => ({
+                  id: String(category.id),
+                  label: category.name,
+                  count: works.filter((work) => work.categoryId === category.id).length,
+                })),
+              ].map((filter) => (
+                <button
+                  key={filter.id}
+                  type="button"
+                  aria-pressed={activeFilter === filter.id}
+                  onClick={() => setActiveFilter(filter.id)}
+                  className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    activeFilter === filter.id
+                      ? 'border-primary bg-primary/15 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground'
+                  }`}
+                >
+                  {filter.label} <span className="ml-1 opacity-70">{filter.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {selectedIds.size > 0 && (
             <Card className="sticky top-3 z-20 border-primary/30 bg-background/95 backdrop-blur">
@@ -404,9 +447,9 @@ export default function AdminGraphic() {
           )}
 
           {isLoading ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            <div className="columns-2 gap-3 sm:columns-3 lg:columns-4 xl:columns-5">
               {Array.from({ length: 8 }, (_, index) => (
-                <div key={index} className="aspect-square animate-pulse rounded-xl bg-muted/20" />
+                <div key={index} className="mb-3 aspect-[3/2] break-inside-avoid animate-pulse rounded-xl bg-muted/20" />
               ))}
             </div>
           ) : error ? (
@@ -422,8 +465,8 @@ export default function AdminGraphic() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {works.map((work) => {
+            <div className="columns-2 gap-3 sm:columns-3 lg:columns-4 xl:columns-5">
+              {visibleWorks.map((work) => {
                 const selected = selectedIds.has(work.id);
                 const category = categories.find((item) => item.id === work.categoryId);
                 return (
@@ -433,7 +476,7 @@ export default function AdminGraphic() {
                     onClick={() => toggleSelection(work.id)}
                     aria-pressed={selected}
                     aria-label={`${selected ? 'Deselect' : 'Select'} portfolio image${category ? ` in ${category.name}` : ''}`}
-                    className={`group relative aspect-square overflow-hidden rounded-xl border bg-muted/10 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    className={`group relative mb-3 inline-block w-full break-inside-avoid overflow-hidden rounded-xl border bg-muted/10 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                       selected ? 'border-primary ring-2 ring-primary/70' : 'border-border hover:border-primary/50'
                     }`}
                   >
@@ -442,7 +485,7 @@ export default function AdminGraphic() {
                       alt={work.altText || 'Graphic portfolio image'}
                       loading="lazy"
                       decoding="async"
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      className="block h-auto w-full object-contain"
                     />
                     {category && (
                       <span className="absolute bottom-2 left-2 max-w-[calc(100%-1rem)] truncate rounded-full bg-black/75 px-2.5 py-1 text-xs text-white backdrop-blur">
