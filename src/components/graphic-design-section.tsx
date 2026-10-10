@@ -74,13 +74,13 @@ export function GraphicDesignSection() {
                   homepageWorks.map((work, index) => (
                     <figure
                       key={`${copy}-${repeat}-${work.id}`}
-                      className="w-[min(58vw,13rem)] shrink-0 overflow-hidden rounded-2xl bg-white/[0.04] sm:w-56"
+                      className="aspect-[7/9] w-[min(58vw,13rem)] shrink-0 overflow-hidden rounded-2xl sm:w-56"
                       aria-hidden={copy === 1 || repeat > 0}
                     >
                       <img
                         src={work.imageUrl}
                         alt={copy === 0 && repeat === 0 ? work.altText || work.title : ''}
-                        className="block aspect-[7/9] h-auto w-full object-contain"
+                        className="block h-full w-full object-cover"
                         loading={copy === 0 && repeat === 0 && index < 2 ? 'eager' : 'lazy'}
                         decoding="async"
                       />
