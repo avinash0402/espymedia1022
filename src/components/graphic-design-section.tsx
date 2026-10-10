@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import { ArrowRight } from 'lucide-react';
 import { useGetGraphicWorks } from '@workspace/api-client-react';
@@ -7,6 +8,25 @@ export function GraphicDesignSection() {
   const publishedWorks = cmsWorks?.filter((work) => work.published && work.imageUrl) || [];
   const featuredWorks = publishedWorks.filter((work) => work.featured);
   const homepageWorks = (featuredWorks.length > 0 ? featuredWorks : publishedWorks).slice(0, 10);
+  const [copiesPerGroup, setCopiesPerGroup] = useState(1);
+
+  useEffect(() => {
+    const updateCopies = () => {
+      if (homepageWorks.length === 0) {
+        setCopiesPerGroup(1);
+        return;
+      }
+
+      const estimatedGroupWidth = homepageWorks.length * 200;
+      setCopiesPerGroup(Math.max(1, Math.ceil(window.innerWidth / estimatedGroupWidth)));
+    };
+
+    updateCopies();
+    window.addEventListener('resize', updateCopies);
+    return () => window.removeEventListener('resize', updateCopies);
+  }, [homepageWorks.length]);
+
+  const marqueeDuration = `${Math.max(40, (copiesPerGroup * homepageWorks.length * 224) / 45)}s`;
 
   return (
     <section className="relative overflow-hidden bg-black py-16 md:py-24 lg:py-32" aria-busy={isLoading}>
@@ -42,36 +62,31 @@ export function GraphicDesignSection() {
           Graphic portfolio could not be loaded: {error.message}
         </div>
       ) : homepageWorks.length > 0 ? (
-        <div className="relative z-10 overflow-hidden pb-[clamp(64px,9vw,150px)]">
-          <div className="graphic-marquee flex w-max">
+        <div className="relative z-10 overflow-hidden py-8">
+          <div className="graphic-marquee flex w-max" style={{ animationDuration: marqueeDuration }}>
             {[0, 1].map((copy) => (
               <div
                 key={copy}
                 className="graphic-marquee-group flex shrink-0 gap-4 pr-4 sm:gap-6 sm:pr-6"
                 aria-hidden={copy === 1}
               >
-                {homepageWorks.map((work, index) => {
-                  const phase = (index / homepageWorks.length) * Math.PI * 2;
-                  const arch = (1 + Math.cos(phase)) / 2;
-                  const tilt = -Math.sin(phase) * 10;
-                  const verticalOffset = `clamp(${(arch * 64).toFixed(1)}px, ${(arch * 10).toFixed(2)}vw, ${(arch * 150).toFixed(1)}px)`;
-
-                  return (
+                {Array.from({ length: copiesPerGroup }, (_, repeat) =>
+                  homepageWorks.map((work, index) => (
                     <figure
-                      key={`${copy}-${work.id}`}
-                      className="w-[min(58vw,13rem)] shrink-0 overflow-hidden rounded-2xl sm:w-56"
-                      style={{ transform: `translateY(${verticalOffset}) rotate(${tilt.toFixed(1)}deg)` }}
+                      key={`${copy}-${repeat}-${work.id}`}
+                      className="w-[min(58vw,13rem)] shrink-0 overflow-hidden rounded-2xl bg-white/[0.04] sm:w-56"
+                      aria-hidden={copy === 1 || repeat > 0}
                     >
                       <img
                         src={work.imageUrl}
-                        alt={copy === 1 ? '' : work.altText || work.title}
-                        className="block aspect-[7/9] h-auto w-full object-cover"
-                        loading={copy === 0 && index < 2 ? 'eager' : 'lazy'}
+                        alt={copy === 0 && repeat === 0 ? work.altText || work.title : ''}
+                        className="block aspect-[7/9] h-auto w-full object-contain"
+                        loading={copy === 0 && repeat === 0 && index < 2 ? 'eager' : 'lazy'}
                         decoding="async"
                       />
                     </figure>
-                  );
-                })}
+                  )),
+                )}
               </div>
             ))}
           </div>

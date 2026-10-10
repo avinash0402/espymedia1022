@@ -424,19 +424,20 @@
 }
 
 /* ── Graphic design section marquee ─────────────────── */
+@keyframes graphic-marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
 .graphic-marquee {
-  animation: gallery-marquee 54s linear infinite;
+  animation: graphic-marquee-scroll 54s linear infinite;
   will-change: transform;
 }
 .graphic-marquee:hover {
   animation-play-state: paused;
 }
-.graphic-marquee-group > figure {
-  backface-visibility: hidden;
-}
-@media (max-width: 639px) {
+@media (prefers-reduced-motion: reduce) {
   .graphic-marquee {
-    animation-duration: 42s;
+    animation: none;
   }
 }
 
