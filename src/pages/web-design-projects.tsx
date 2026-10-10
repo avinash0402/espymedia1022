@@ -169,32 +169,31 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
             loading="lazy"
           />
         )}
-        {/* Browser chrome mockup */}
-        <div className={`absolute inset-3 rounded-lg border border-white/10 overflow-hidden ${project.imageUrl ? 'bg-black/10' : 'bg-black/40 backdrop-blur-sm'}`}>
-          {/* Browser bar */}
-          <div className="h-7 bg-black/60 border-b border-white/10 flex items-center px-3 gap-2 flex-shrink-0">
-            <div className="flex gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-red-500/70" />
-              <div className="w-2 h-2 rounded-full bg-yellow-500/70" />
-              <div className="w-2 h-2 rounded-full bg-green-500/70" />
+        {!project.imageUrl && (
+          <div className="absolute inset-3 overflow-hidden rounded-lg border border-white/10 bg-black/40 backdrop-blur-sm">
+            <div className="flex h-7 flex-shrink-0 items-center gap-2 border-b border-white/10 bg-black/60 px-3">
+              <div className="flex gap-1.5">
+                <div className="h-2 w-2 rounded-full bg-red-500/70" />
+                <div className="h-2 w-2 rounded-full bg-yellow-500/70" />
+                <div className="h-2 w-2 rounded-full bg-green-500/70" />
+              </div>
+              <div className="mx-2 flex h-3.5 flex-1 items-center rounded bg-white/10 px-2">
+                <div className="mr-1.5 h-2 w-2 rounded-full" style={{ background: style.accentColor, opacity: 0.8 }} />
+                <div className="h-1.5 w-24 rounded-full bg-white/20" />
+              </div>
             </div>
-            <div className="flex-1 mx-2 h-3.5 rounded bg-white/10 flex items-center px-2">
-              <div className="w-2 h-2 rounded-full mr-1.5" style={{ background: style.accentColor, opacity: 0.8 }} />
-              <div className="h-1.5 w-24 rounded-full bg-white/20" />
+            <div className="space-y-2 p-3">
+              <div className="h-4 rounded" style={{ background: style.accentColor, opacity: 0.25, width: '60%' }} />
+              <div className="h-2 rounded bg-white/10" style={{ width: '90%' }} />
+              <div className="h-2 rounded bg-white/10" style={{ width: '75%' }} />
+              <div className="h-2 rounded bg-white/10" style={{ width: '80%' }} />
+              <div className="mt-3 flex gap-2">
+                <div className="h-6 w-20 rounded-full" style={{ background: style.accentColor, opacity: 0.5 }} />
+                <div className="h-6 w-16 rounded-full bg-white/10" />
+              </div>
             </div>
           </div>
-          {/* Content lines */}
-          <div className="p-3 space-y-2">
-            <div className="h-4 rounded" style={{ background: style.accentColor, opacity: 0.25, width: '60%' }} />
-            <div className="h-2 rounded bg-white/10" style={{ width: '90%' }} />
-            <div className="h-2 rounded bg-white/10" style={{ width: '75%' }} />
-            <div className="h-2 rounded bg-white/10" style={{ width: '80%' }} />
-            <div className="mt-3 flex gap-2">
-              <div className="h-6 w-20 rounded-full" style={{ background: style.accentColor, opacity: 0.5 }} />
-              <div className="h-6 w-16 rounded-full bg-white/10" />
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300" />
