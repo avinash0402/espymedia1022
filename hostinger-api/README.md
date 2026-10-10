@@ -108,6 +108,14 @@ The frontend still uses the existing React UI and API contract. Public content,
 admin login, CMS updates, leads, and image uploads are handled by the PHP API.
 Uploads are stored under this API's `uploads/` directory; ensure the Hostinger
 account has enough space and that this directory is writable by PHP.
+
+Social preview requests from WhatsApp, Facebook, X, LinkedIn, and other link
+crawlers are routed by Vercel to `/share.php` on this API. That endpoint reads
+the matching page's SEO row and the default site settings so link previews use
+the current admin title, description, and OG image. Deploy the updated frontend
+`vercel.json` and upload `share.php` to this API's document root for social
+previews to work.
+
 Admin sessions use a 30-day rolling lifetime: authenticated activity refreshes
 the browser cookie and PHP session data, and the API sets
 `session.gc_maxlifetime` to the same interval. If Hostinger disables this

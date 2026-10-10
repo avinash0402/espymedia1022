@@ -2,18 +2,20 @@
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/public",
   "installCommand": "pnpm install --no-frozen-lockfile",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
+      "src": "^/(.*)$",
       "has": [
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i)(facebookexternalhit|facebot|twitterbot|linkedinbot|whatsapp|slackbot|telegrambot|discordbot|google-inspectiontool|googlebot|bingbot)"
+          "value": "([Ff]acebookexternalhit|[Ff]acebot|[Tt]witterbot|[Ll]inked[Ii]n[Bb]ot|[Ww]hats[Aa]pp|[Ss]lackbot|[Tt]elegram[Bb]ot|[Dd]iscordbot|[Gg]oogle-inspectiontool|[Gg]ooglebot|[Bb]ingbot)"
         }
       ],
-      "destination": "/api/share?path=/$1"
-    },
+      "dest": "https://api.espymediaagency.in/share.php?path=/$1"
+    }
+  ],
+  "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
