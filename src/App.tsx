@@ -60,20 +60,6 @@ function ScrollToTop() {
   return null;
 }
 
-function RouteLoadingFallback() {
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black text-white"
-    >
-      <span className="text-lg font-semibold tracking-tight">Espy Media</span>
-      <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-violet-400" />
-      <span className="sr-only">Loading page</span>
-    </div>
-  );
-}
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -125,7 +111,7 @@ function Router() {
     <ScrollToTop />
     <SeoHead />
     <MotionEnhancementLayer location={location} disabled={isAdmin} />
-    <Suspense fallback={<RouteLoadingFallback />}>
+    <Suspense fallback={null}>
       {routes}
     </Suspense>
     {!isAdmin && <DeferredChatbot />}
