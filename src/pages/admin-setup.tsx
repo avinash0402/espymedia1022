@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAdminSetup } from '@workspace/api-client-react';
@@ -71,7 +71,7 @@ export default function AdminSetup() {
               <div role="alert" className="mb-4 space-y-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                 <p className="font-semibold">Admin setup failed</p>
                 <p className="break-words">{setupErrorMessage(setup.error.message)}</p>
-                <a className="underline underline-offset-4" href="/diagnostics">Open deployment diagnostics</a>
+                <Link className="underline underline-offset-4" href="/diagnostics">Open deployment diagnostics</Link>
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4">

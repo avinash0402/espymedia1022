@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, CheckCircle2, Loader2, Mail, MapPin, Phone } from 'lucide-react';
 import { NavBar } from '@/components/nav-bar';
@@ -6,6 +7,7 @@ import { Footer } from '@/components/footer';
 import { useCreateLead, useGetSettings } from '@workspace/api-client-react';
 
 export default function Contact() {
+  const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState('');
@@ -321,7 +323,7 @@ export default function Contact() {
                   <p className="text-lg text-zinc-400 mb-10 font-inter">
                     Thanks, <span className="text-white font-semibold">{formData.name}</span>. We've received your inquiry and will get back to you shortly.
                   </p>
-                  <button onClick={() => window.location.href = '/'} className="pill-btn-ghost">
+                  <button onClick={() => setLocation('/')} className="pill-btn-ghost">
                     Back to Home
                   </button>
                 </motion.div>

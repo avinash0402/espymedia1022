@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { Link } from 'wouter';
 import {
   FaInstagram,
   FaTwitter,
@@ -93,9 +94,9 @@ export function Footer() {
         <div className="border-t border-zinc-900 pt-6 flex flex-col md:flex-row items-start md:items-center justify-between text-zinc-600 text-[10px] uppercase tracking-widest font-inter gap-4">
           <p>{settings?.siteName || 'ESPY MEDIA'} · {settings?.footerText?.split(/\r?\n/)[0] || 'BUILT WITH PERFORMANCE IN MIND.'}</p>
           <div className="flex gap-6">
-            <a href="/contact" className="hover:text-zinc-400 transition-colors">Contact</a>
-            <a href="/privacy-policy" className="hover:text-zinc-400 transition-colors">Privacy</a>
-            <a href="/terms-conditions" className="hover:text-zinc-400 transition-colors">Terms</a>
+            <Link href="/contact" className="hover:text-zinc-400 transition-colors">Contact</Link>
+            <Link href="/privacy-policy" className="hover:text-zinc-400 transition-colors">Privacy</Link>
+            <Link href="/terms-conditions" className="hover:text-zinc-400 transition-colors">Terms</Link>
           </div>
         </div>
       </div>

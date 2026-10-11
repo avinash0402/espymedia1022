@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import {
   ArrowUpRight, ArrowRight, Briefcase,
   LayoutTemplate, Megaphone, Palette, LayoutDashboard,
@@ -202,6 +202,7 @@ const PRICING_PLANS = [
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const [, setLocation] = useLocation();
   const { data: services } = useGetServices();
   const { data: platforms } = useGetPlatforms();
   const { data: pricingPlans } = useGetPricingPlans();
@@ -568,7 +569,13 @@ export default function Home() {
                         {/* Visual — image or browser mockup (16:9) */}
                         <div className={`relative w-full overflow-hidden ${project.imageUrl ? '' : `bg-gradient-to-br ${gradient}`}`} style={{ aspectRatio: '16/9' }}>
                           {project.imageUrl ? (
-                            <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
+                            <img
+                              src={project.imageUrl}
+                              alt={project.title}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <div className="absolute inset-3 rounded-lg bg-black/40 backdrop-blur-sm border border-white/10 overflow-hidden">
                               <div className="h-7 bg-black/60 border-b border-white/10 flex items-center px-3 gap-2">
@@ -1051,7 +1058,7 @@ export default function Home() {
 
             <form
               className="max-w-md mx-auto flex flex-col gap-3 sm:flex-row sm:gap-4"
-              onSubmit={(e) => { e.preventDefault(); window.location.href = '/contact'; }}
+              onSubmit={(e) => { e.preventDefault(); setLocation('/contact'); }}
             >
               <input
                 type="email"

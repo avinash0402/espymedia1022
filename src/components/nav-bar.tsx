@@ -66,23 +66,27 @@ export function NavBar() {
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-8">
-            {links.map((l) => (
-              <a
-                key={l.label}
-                href={l.href.startsWith('#') ? sectionHref(l.href) : l.href}
-                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors duration-200 font-inter"
-              >
-                {l.label}
-              </a>
-            ))}
+            {links.map((l) => {
+              const href = l.href.startsWith('#') ? sectionHref(l.href) : l.href;
+              const className = 'text-sm font-medium text-zinc-400 hover:text-white transition-colors duration-200 font-inter';
+              return href.startsWith('/') ? (
+                <Link key={l.label} href={href} className={className}>
+                  {l.label}
+                </Link>
+              ) : (
+                <a key={l.label} href={href} className={className}>
+                  {l.label}
+                </a>
+              );
+            })}
           </div>
 
           {/* Right side */}
           <div className="flex items-center gap-3">
             {/* Book a Call — visible on ALL screen sizes */}
-            <a href="/contact" onClick={() => setMobileOpen(false)}>
+            <Link href="/contact" onClick={() => setMobileOpen(false)}>
               <ShinyCta variant="header" showArrow={false} className="whitespace-nowrap">Get Quote →</ShinyCta>
-            </a>
+            </Link>
 
             {/* Mobile toggle */}
             <button
@@ -107,22 +111,36 @@ export function NavBar() {
             className="fixed inset-0 z-40 bg-black/98 backdrop-blur-2xl flex flex-col pt-[88px] px-6 pb-10"
           >
             <div className="flex flex-col gap-1">
-              {links.map((l, i) => (
-                <motion.div
-                  key={l.href}
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                >
-                  <a
-                    href={l.href.startsWith('#') ? sectionHref(l.href) : l.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="block text-4xl font-bold py-3 text-white hover:text-[#7c3aed] transition-colors font-manrope"
+              {links.map((l, i) => {
+                const href = l.href.startsWith('#') ? sectionHref(l.href) : l.href;
+                const className = 'block text-4xl font-bold py-3 text-white hover:text-[#7c3aed] transition-colors font-manrope';
+                return (
+                  <motion.div
+                    key={l.href}
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06 }}
                   >
-                    {l.label}
-                  </a>
-                </motion.div>
-              ))}
+                    {href.startsWith('/') ? (
+                      <Link
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className={className}
+                      >
+                        {l.label}
+                      </Link>
+                    ) : (
+                      <a
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className={className}
+                      >
+                        {l.label}
+                      </a>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
         )}

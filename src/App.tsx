@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { motion, useReducedMotion } from 'framer-motion';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { MotionEnhancementLayer } from '@/components/motion-enhancement-layer';
@@ -61,6 +60,20 @@ function ScrollToTop() {
   return null;
 }
 
+function RouteLoadingFallback() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex min-h-screen flex-col items-center justify-center gap-4 bg-black text-white"
+    >
+      <span className="text-lg font-semibold tracking-tight">Espy Media</span>
+      <span className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-violet-400" />
+      <span className="sr-only">Loading page</span>
+    </div>
+  );
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -82,7 +95,6 @@ const queryClient = new QueryClient({
 function Router() {
   const [location] = useLocation();
   const isAdmin = location.startsWith('/admin');
-  const prefersReducedMotion = useReducedMotion();
   const routes = (
     <Switch>
       <Route path="/" component={Home} />
@@ -113,17 +125,8 @@ function Router() {
     <ScrollToTop />
     <SeoHead />
     <MotionEnhancementLayer location={location} disabled={isAdmin} />
-    <Suspense fallback={null}>
-      {isAdmin || prefersReducedMotion !== false ? routes : (
-        <motion.div
-          key={location}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
-        >
-          {routes}
-        </motion.div>
-      )}
+    <Suspense fallback={<RouteLoadingFallback />}>
+      {routes}
     </Suspense>
     {!isAdmin && <DeferredChatbot />}
     </>
